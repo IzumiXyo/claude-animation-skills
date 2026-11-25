@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/bash
 # Render one of the quick animation skills on GitHub Actions and download the result.
 #
 #   ./render.sh <skill> <spec.json|inline-json> [output-name]
@@ -41,12 +41,17 @@ gh auth status >/dev/null 2>&1 || {
 }
 
 echo "triggering $SKILL -> $NAME on $REPO ..."
-gh workflow run render.yml -R "$REPO" --ref "$REF" \
-  -f skill="$SKILL" -f name="$NAME" -f spec="$SPEC"
+RUN_OUTPUT="$(gh workflow run render.yml -R "$REPO" --ref "$REF" \
+  -f skill="$SKILL" -f name="$NAME" -f spec="$SPEC" 2>&1)"
+printf '%s\n' "$RUN_OUTPUT"
+RUN_ID="$(printf '%s\n' "$RUN_OUTPUT" | grep -oE 'actions/runs/[0-9]+' | tail -1 | cut -d/ -f3)"
 
-sleep 3
-RUN_ID="$(gh run list -R "$REPO" --workflow render.yml --event workflow_dispatch \
-  --limit 1 --json databaseId --jq '.[0].databaseId')"
+if [ -z "$RUN_ID" ]; then
+  echo "warning: could not read the run id from gh output; falling back to the newest run" >&2
+  sleep 5
+  RUN_ID="$(gh run list -R "$REPO" --workflow render.yml --event workflow_dispatch \
+    --limit 1 --json databaseId --jq '.[0].databaseId')"
+fi
 
 if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
   echo "error: could not find the workflow run" >&2

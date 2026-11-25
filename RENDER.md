@@ -43,6 +43,10 @@ one-shot workflow.
 
 ## Notes
 
+- `render.sh` uses a Termux shebang so it can run directly on the phone. On
+  another OS, run it as `bash render.sh ...`.
+- The quick skills' `SKILL.md` files carry a Termux note pointing at this
+  workflow, so the agent does not try a local Chromium render.
 - Each render takes about 1 minute (2D) to 2–3 minutes (3D), including setup.
 - The workflow caches the HyperFrames browser and npm packages between runs.
 - `kit/anim.py` prefers a locally installed HyperFrames binary over `npx`, so
