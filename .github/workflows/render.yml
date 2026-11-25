@@ -55,7 +55,7 @@ jobs:
         run: |
           cd kit
           npm install --no-audit --no-fund
-          npm install --no-audit --no-fund --no-save hyperframes@0.8.34
+          npm install --no-audit --no-fund --no-save --onnxruntime-node-install-cuda=skip hyperframes@0.8.34
           mkdir -p vendor
           if [ ! -s vendor/gsap.min.js ]; then
             curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js -o vendor/gsap.min.js
