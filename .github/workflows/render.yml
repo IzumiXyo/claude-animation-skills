@@ -1,0 +1,101 @@
+name: Render animation
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: "Skill (quick skills: graph, map-route, breakdown, dan-koe, kurzgesagt, low-poly, minecraft, minimalistic-graphics)"
+        required: true
+        type: choice
+        default: graph
+        options:
+          - graph
+          - map-route
+          - breakdown
+          - dan-koe
+          - kurzgesagt
+          - low-poly
+          - minecraft
+          - minimalistic-graphics
+      spec:
+        description: "Spec JSON (one object, same fields as the skill's SKILL.md)"
+        required: true
+        type: string
+      name:
+        description: "Output file name (without extension)"
+        required: false
+        default: render
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: kit/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install kit dependencies
+        run: |
+          cd kit
+          npm install --no-audit --no-fund
+          mkdir -p vendor
+          if [ ! -s vendor/gsap.min.js ]; then
+            curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js -o vendor/gsap.min.js
+          fi
+
+      - name: Cache HyperFrames browser
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/hyperframes
+            ~/.cache/puppeteer
+          key: hyperframes-0.8.34-${{ runner.os }}
+
+      - name: Write spec
+        env:
+          SPEC: ${{ inputs.spec }}
+          NAME: ${{ inputs.name }}
+        run: |
+          mkdir -p jobs
+          python3 - <<'PY'
+          import json, os, re
+
+          raw = os.environ["SPEC"]
+          spec = json.loads(raw)
+          name = re.sub(r"[^A-Za-z0-9._-]+", "-", os.environ.get("NAME") or "render").strip("-") or "render"
+          spec["out"] = f"out/{name}.mp4"
+          with open("jobs/spec.json", "w", encoding="utf-8") as f:
+              json.dump(spec, f, ensure_ascii=False, indent=2)
+          print(json.dumps(spec, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Render
+        env:
+          SKILL: ${{ inputs.skill }}
+        run: python3 "skills/$SKILL/build.py" jobs/spec.json
+
+      - name: Upload video and contact sheet
+        uses: actions/upload-artifact@v4
+        with:
+          name: animation-${{ github.run_number }}
+          path: |
+            jobs/out/*.mp4
+            jobs/out/*.sheet.jpg
+          if-no-files-found: error
