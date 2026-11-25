@@ -852,12 +852,10 @@ function renderAt(t) {
     const p = crowd[i];
     updateCrowd(p, t);
     const ndx = p.root.position.x - camera.position.x, ndz = p.root.position.z - camera.position.z;
-    const near = smooth(1.5, 2.1, Math.sqrt(ndx * ndx + ndz * ndz));
-    if (near < 0.01) {
+    if (ndx * ndx + ndz * ndz < 9.0) {
       for (const mesh of CROWD_MESHES) mesh.setMatrixAt(i, ZERO);
       continue;
     }
-    p.root.scale.setScalar(p.baseScale * near);
     p.root.updateMatrixWorld(true);
     writeCrowd(i, p);
   }
