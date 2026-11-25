@@ -3,6 +3,8 @@ name: zach-d-films
 description: Makes a 3D cartoon "what if" explainer short (9:16) in the style of Zack D. Films-type videos, entirely in code with three.js. Procedural cartoon people, props and effects, a blue studio sky, slow-motion impacts, a red force-ripple overlay, quick whip cuts and 1 to 3 word captions timed to the voiceover. Use when the user runs /zach-d-films or asks for a 3D cartoon explainer, a "could X stop Y" or "what if" short with characters and props.
 ---
 
+> **Termux/Android:** this engine needs local Chromium, and the one-shot GitHub Actions workflow in this fork only covers the quick spec-driven skills. Render this one on a desktop machine.
+
 # /zach-d-films
 
 ```

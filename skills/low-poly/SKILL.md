@@ -3,6 +3,9 @@ name: low-poly
 description: Makes a PS1/N64-era low-poly 3D animation for a reel, in the style of "low poly shorts". Chunky low-resolution pixels, wobbly vertices, dithering, flat warm lighting and small yellow captions with a thin black outline. The built-in scene is a train platform: a dog sits and waits, a train brakes in and pulls away, and he is still there in the snow. Use when the user runs /low-poly or asks for a low-poly, PS1-style, retro 3D or "low poly shorts" animation.
 ---
 
+> **Termux/Android:** local HyperFrames rendering is not available here. Render this skill's spec on GitHub Actions instead:
+> `bash ~/claude-animation-skills/render.sh low-poly <spec.json> <output-name>` (see `~/claude-animation-skills/RENDER.md`). The spec below is unchanged.
+
 # /low-poly
 
 ```

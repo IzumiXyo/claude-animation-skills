@@ -3,6 +3,8 @@ name: stick-figure
 description: Makes a code-animated stick-figure explainer reel (9:16, 30 to 45 s) from a question or topic. A bright cartoon world with thick outlines, stick people with big white heads and faces, constant camera motion, whip transitions, 1 to 2 word captions, a playful underscore and cartoon sound effects, all generated in code and timed to the voiceover word by word. Use when the user runs /stick-figure or asks for a stick-figure, stickman or cartoon "what if" explainer.
 ---
 
+> **Termux/Android:** this engine needs local Chromium, and the one-shot GitHub Actions workflow in this fork only covers the quick spec-driven skills. Render this one on a desktop machine.
+
 # /stick-figure
 
 ```

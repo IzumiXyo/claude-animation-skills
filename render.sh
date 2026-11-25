@@ -29,6 +29,8 @@ else
 fi
 
 [ -n "$NAME" ] || NAME="$SKILL"
+NAME="$(printf '%s' "$NAME" | sed 's/[^A-Za-z0-9._-]/-/g')"
+[ -n "$NAME" ] || NAME="render"
 
 python3 -c 'import json,sys; json.loads(sys.argv[1])' "$SPEC" >/dev/null || {
   echo "error: spec is not valid JSON" >&2
@@ -59,7 +61,11 @@ if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
 fi
 
 echo "run: https://github.com/$REPO/actions/runs/$RUN_ID"
-gh run watch "$RUN_ID" -R "$REPO" --exit-status
+if ! gh run watch "$RUN_ID" -R "$REPO" --exit-status; then
+  echo "render failed; last log lines:" >&2
+  gh run view "$RUN_ID" -R "$REPO" --log-failed 2>&1 | tail -40 >&2 || true
+  exit 1
+fi
 
 DEST="renders/$NAME"
 rm -rf "$DEST"

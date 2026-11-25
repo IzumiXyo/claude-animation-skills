@@ -3,6 +3,9 @@ name: map-route
 description: Makes a 3D map animation for a reel. A clean white city with parks and a river, a coloured route that draws itself from start to destination while the camera follows, a red pin that drops with a bounce, an ETA card that counts down and a destination card. Use when the user runs /map-route or asks for an animated route, a "from A to B" map, a journey or a commute animation.
 ---
 
+> **Termux/Android:** local HyperFrames rendering is not available here. Render this skill's spec on GitHub Actions instead:
+> `bash ~/claude-animation-skills/render.sh map-route <spec.json> <output-name>` (see `~/claude-animation-skills/RENDER.md`). The spec below is unchanged.
+
 # /map-route
 
 ```

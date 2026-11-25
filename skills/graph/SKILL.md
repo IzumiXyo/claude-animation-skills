@@ -3,6 +3,9 @@ name: graph
 description: Makes a minimal line-graph animation for a reel. A smooth black line draws itself on white (or white on black) while one big number counts up with the tip, then lands on the final value. Use when the user runs /graph or asks for a growth chart, a "0 to 100K" number animation or an animated stat.
 ---
 
+> **Termux/Android:** local HyperFrames rendering is not available here. Render this skill's spec on GitHub Actions instead:
+> `bash ~/claude-animation-skills/render.sh graph <spec.json> <output-name>` (see `~/claude-animation-skills/RENDER.md`). The spec below is unchanged.
+
 # /graph
 
 ```

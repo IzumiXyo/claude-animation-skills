@@ -3,6 +3,9 @@ name: breakdown
 description: Makes a 3D exploded-view animation for a reel. A phone floats on a dark studio backdrop, comes apart layer by layer (glass, screen, frame, board and battery, back), and each part gets a thin leader line and a label. Use when the user runs /breakdown or asks for an exploded view, a "what's inside" teardown or a labelled 3D breakdown of a device.
 ---
 
+> **Termux/Android:** local HyperFrames rendering is not available here. Render this skill's spec on GitHub Actions instead:
+> `bash ~/claude-animation-skills/render.sh breakdown <spec.json> <output-name>` (see `~/claude-animation-skills/RENDER.md`). The spec below is unchanged.
+
 # /breakdown
 
 ```

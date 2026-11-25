@@ -3,6 +3,8 @@ name: zach-3d-films
 description: Makes a 3D cartoon "what if" explainer short (9:16) entirely in code with three.js, in the style of Zack D. Films-type videos. The same skill as /zach-d-films under the name used in the reel. Procedural cartoon people, props and effects, slow-motion impacts, a red force ripple and 1 to 3 word captions timed to the voiceover. Use when the user runs /zach-3d-films or asks for a 3D cartoon explainer or a "could X stop Y" short.
 ---
 
+> **Termux/Android:** this engine needs local Chromium, and the one-shot GitHub Actions workflow in this fork only covers the quick spec-driven skills. Render this one on a desktop machine.
+
 # /zach-3d-films
 
 This is `/zach-d-films` under another name: the same engine, the same worked example (the armour short, where the arrow hits the plate and his jaw drops) and the same steps.
