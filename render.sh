@@ -29,7 +29,7 @@ else
 fi
 
 [ -n "$NAME" ] || NAME="$SKILL"
-NAME="$(printf '%s' "$NAME" | sed 's/[^A-Za-z0-9._-]/-/g')"
+NAME="$(printf '%s' "$NAME" | sed 's/[^A-Za-z0-9._-]/-/g; s/^[.]*//')"
 [ -n "$NAME" ] || NAME="render"
 
 python3 -c 'import json,sys; json.loads(sys.argv[1])' "$SPEC" >/dev/null || {
