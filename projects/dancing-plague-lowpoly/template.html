@@ -532,7 +532,8 @@ for (let i = 0; i < CROWD_N; i++) {
   });
   p.root.position.set(x, 0, z);
   p.root.rotation.y = p.baseRot;
-  p.root.scale.setScalar(0.9 + rnd() * 0.16);
+  p.baseScale = 0.9 + rnd() * 0.16;
+  p.root.scale.setScalar(p.baseScale);
   crowd.push(p);
 
   const dress = new THREE.Color(DRESS[i % 5]);
@@ -554,8 +555,7 @@ for (const mesh of [M.torso, M.skirt, M.head, M.hair, M.hat, M.armL, M.armR, M.l
 }
 
 function writeCrowd(i, p) {
-  const cdx = p.root.position.x - camera.position.x, cdz = p.root.position.z - camera.position.z;
-  if (!p.visible || cdx * cdx + cdz * cdz < 3.24) {
+  if (!p.visible) {
     for (const mesh of CROWD_MESHES) mesh.setMatrixAt(i, ZERO);
     return;
   }
@@ -851,6 +851,13 @@ function renderAt(t) {
   for (let i = 0; i < crowd.length; i++) {
     const p = crowd[i];
     updateCrowd(p, t);
+    const ndx = p.root.position.x - camera.position.x, ndz = p.root.position.z - camera.position.z;
+    const near = smooth(1.5, 2.1, Math.sqrt(ndx * ndx + ndz * ndz));
+    if (near < 0.01) {
+      for (const mesh of CROWD_MESHES) mesh.setMatrixAt(i, ZERO);
+      continue;
+    }
+    p.root.scale.setScalar(p.baseScale * near);
     p.root.updateMatrixWorld(true);
     writeCrowd(i, p);
   }
