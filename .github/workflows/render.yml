@@ -26,6 +26,16 @@ on:
         required: false
         default: render
         type: string
+      project:
+        description: "Optional project under projects/ (overrides skill), e.g. dancing-plague-lowpoly"
+        required: false
+        default: ""
+        type: string
+      snap:
+        description: "Optional snapshot times (comma-separated) instead of a full render"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -33,7 +43,7 @@ permissions:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 150
 
     steps:
       - name: Checkout
@@ -95,13 +105,33 @@ jobs:
       - name: Render
         env:
           SKILL: ${{ inputs.skill }}
-        run: python3 "skills/$SKILL/build.py" jobs/spec.json
+          PROJECT: ${{ inputs.project }}
+          SNAP: ${{ inputs.snap }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PROJECT" ]; then
+            CMD=(python3 "projects/$PROJECT/build.py" jobs/spec.json)
+          else
+            CMD=(python3 "skills/$SKILL/build.py" jobs/spec.json)
+          fi
+          if [ -n "$SNAP" ]; then CMD+=(--snap "$SNAP"); fi
+          echo "running: ${CMD[*]}"
+          "${CMD[@]}"
 
       - name: Upload video and contact sheet
+        if: ${{ inputs.snap == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: animation-${{ github.run_number }}
           path: |
             jobs/out/*.mp4
             jobs/out/*.sheet.jpg
+          if-no-files-found: error
+
+      - name: Upload snapshots
+        if: ${{ inputs.snap != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshots-${{ github.run_number }}
+          path: jobs/out/*.snaps/*.png
           if-no-files-found: error

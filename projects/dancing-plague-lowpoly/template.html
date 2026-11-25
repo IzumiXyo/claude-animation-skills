@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Inter';font-weight:700;src:url(fonts/inter-700-normal.woff2) format('woff2')}
+@font-face{font-family:'InterTight';font-weight:800;src:url(fonts/inter-tight-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:'Poppins';font-weight:500;src:url(fonts/poppins-latin-500-normal.woff2) format('woff2')}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#1c1f24}
+#root{position:relative;width:1080px;height:1920px;overflow:hidden;background:#2f343c;font-family:'Inter',sans-serif}
+#c{position:absolute;left:0;top:0;width:1080px;height:1920px;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 44%,rgba(0,0,0,0) 38%,rgba(0,0,0,.52) 100%)}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+#cap{position:absolute;left:80px;width:920px;top:1228px;text-align:center;font:700 48px/1.12 'Inter';color:#ffe23a;letter-spacing:.012em;
+  visibility:hidden;opacity:0;
+  text-shadow:-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,3px 3px 0 #000,0 -3px 0 #000,0 3px 0 #000,-3px 0 0 #000,3px 0 0 #000,0 5px 0 #000}
+#tag{position:absolute;left:64px;top:116px;font:700 25px 'Inter';letter-spacing:.28em;color:#e9d7a6;opacity:0;
+  text-shadow:0 3px 0 #000,-2px 0 0 #000,2px 0 0 #000}
+#tag:after{content:'';display:block;width:92px;height:2px;background:#c8a35a;margin-top:14px}
+#title{position:absolute;left:80px;top:560px;width:920px;text-align:center;opacity:0;visibility:hidden}
+#title .kick{font:700 27px 'Inter';letter-spacing:.38em;color:#d8b36a;margin-bottom:34px;text-shadow:0 3px 0 #000}
+#title h1{font:800 112px/.92 'InterTight';color:#f4eddc;letter-spacing:-.01em;text-shadow:0 7px 0 #000}
+#title .rule{width:150px;height:2px;background:#c8a35a;margin:38px auto}
+#title p{font:500 38px/1.3 'Poppins';color:#e4cf9e;text-shadow:0 4px 0 #000}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="__DURATION__" data-fps="24" data-width="1080" data-height="1920">
+<canvas id="c" width="360" height="640"></canvas>
+<div id="vignette"></div>
+<div id="fade"></div>
+<div id="tag">STRASBOURG · 1518</div>
+<div id="cap"></div>
+<div id="title">
+  <div class="kick">STRASBOURG · 1518</div>
+  <h1>THE DANCING<br>PLAGUE</h1>
+  <div class="rule"></div>
+  <p>Apa yang membuat mereka menari?</p>
+</div>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+
+const SPEC = __SPEC__;
+const RW = 360, RH = 640, DUR = Number(document.getElementById('root').dataset.duration);
+let seed = 1518;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const lerp = (a, b, k) => a + (b - a) * k;
+
+// ------------------------------------------------------------ renderer
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: false });
+renderer.setPixelRatio(1); renderer.setSize(RW, RH, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+const BG = 0x30343c;
+scene.background = new THREE.Color(BG);
+scene.fog = new THREE.Fog(BG, 13, 44);
+const camera = new THREE.PerspectiveCamera(52, RW / RH, 0.08, 120);
+
+// ------------------------------------------------------------ PS1/N64 shader patch: vertex snap + 15-bit dither
+const SNX = (RW / 2).toFixed(1), SNY = (RH / 2).toFixed(1);
+function ps1(m) {
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      if (gl_Position.w > 0.0) { vec2 sn = vec2(${SNX}, ${SNY});
+        gl_Position.xy = floor(gl_Position.xy / gl_Position.w * sn + 0.5) / sn * gl_Position.w; }`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', `#include <dithering_fragment>
+      { const float BY[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.);
+        ivec2 q = ivec2(mod(gl_FragCoord.xy, 4.0));
+        float th = (BY[q.x + q.y * 4] + 0.5) / 16.0 - 0.5;
+        gl_FragColor.rgb = clamp(floor(gl_FragColor.rgb * 31.0 + th + 0.5) / 31.0, 0.0, 1.0); }`);
+  };
+  m.customProgramCacheKey = () => 'ps1';
+  return m;
+}
+const lam = (o) => ps1(new THREE.MeshLambertMaterial(Object.assign({ flatShading: true }, o)));
+const basic = (o) => ps1(new THREE.MeshBasicMaterial(o));
+
+// ------------------------------------------------------------ pixel textures
+function tex(w, h, draw) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; draw(g, w, h);
+  const t = new THREE.CanvasTexture(cv);
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const rgbOf = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
+const col = (h, k = 1) => { const [r, g, b] = rgbOf(h); return `rgb(${clamp(r * k, 0, 255) | 0},${clamp(g * k, 0, 255) | 0},${clamp(b * k, 0, 255) | 0})`; };
+const px = (g, x, y, c, w = 1, h = 1) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+const noise = (g, x0, y0, w, h, base, j) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) px(g, x, y, col(base, 1 + (rnd() * 2 - 1) * j)); };
+
+const T = {};
+T.cobble = tex(32, 32, (g) => {
+  noise(g, 0, 0, 32, 32, 0x847a6d, .06);
+  for (let y = 0; y < 32; y += 8) for (let x = 0; x < 32; x += 8) {
+    const o = ((y / 8) | 0) % 2 ? 4 : 0;
+    px(g, x + o, y, col(0x5d554b), 8, 1); px(g, x + o, y, col(0x5d554b), 1, 8);
+    for (let j = 1; j < 8; j++) for (let i = 1; i < 8; i++) px(g, (x + o + i) % 32, (y + j) % 32, col(0x9b9182, .88 + rnd() * .22));
+  }
+});
+T.dirt = tex(32, 32, (g) => {
+  noise(g, 0, 0, 32, 32, 0x7d654c, .08);
+  for (let k = 0; k < 45; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0x5f4a36, .9 + rnd() * .2), 1 + (rnd() * 3 | 0), 1);
+  for (let k = 0; k < 20; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0x9a8062), 1, 1);
+});
+T.plaster = tex(32, 32, (g) => {
+  noise(g, 0, 0, 32, 32, 0xd8c6a3, .045);
+  for (let k = 0; k < 16; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0xc4ad88), 1 + (rnd() * 2 | 0), 1);
+  for (let k = 0; k < 5; k++) { let x = rnd() * 32 | 0, y = rnd() * 32 | 0; for (let i = 0; i < 5; i++) { px(g, x, y, col(0xb39b77)); x += (rnd() * 2 | 0); y++; } }
+});
+T.timber = tex(32, 32, (g) => {
+  for (let y = 0; y < 32; y++) { const b = [0x5b3a24, 0x4c3020, 0x68442a, 0x533522][(y / 8) | 0]; for (let x = 0; x < 32; x++) px(g, x, y, col(b, .9 + rnd() * .16)); }
+  for (let y = 7; y < 32; y += 8) for (let x = 0; x < 32; x++) px(g, x, y, col(0x2e1d12));
+  for (let k = 0; k < 5; k++) px(g, rnd() * 30 | 0, rnd() * 30 | 0, col(0x382315), 2, 1);
+});
+T.stone = tex(32, 32, (g) => {
+  noise(g, 0, 0, 32, 32, 0x8f8d85, .05);
+  for (let y = 0; y < 32; y += 8) for (let x = 0; x < 32; x += 12) {
+    const o = ((y / 8) | 0) % 2 ? 6 : 0;
+    px(g, (x + o) % 32, y, col(0x625f58), 12, 1); px(g, (x + o) % 32, y, col(0x625f58), 1, 8);
+    for (let j = 1; j < 8; j++) for (let i = 1; i < 12; i++) px(g, (x + o + i) % 32, (y + j) % 32, col(0xa7a39a, .9 + rnd() * .18));
+  }
+});
+T.roof = tex(32, 32, (g) => {
+  for (let y = 0; y < 32; y += 8) for (let x = 0; x < 32; x += 8) {
+    const b = (y / 8) % 2 ? 0x6d3c32 : 0x7c4638;
+    for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) px(g, x + i, y + j, col(b, .86 + rnd() * .26));
+    px(g, x, y + 7, col(0x3e221d)); px(g, x + 7, y, col(0x3e221d)); px(g, x + 7, y + 7, col(0x3e221d));
+  }
+});
+T.window = tex(16, 20, (g) => {
+  px(g, 0, 0, '#3a2a1d', 16, 20);
+  for (let y = 1; y < 19; y++) for (let x = 1; x < 15; x++) px(g, x, y, col(0xffc76e, .75 + rnd() * .4));
+  px(g, 7, 0, '#2e2016', 2, 20); px(g, 0, 9, '#2e2016', 16, 2);
+  px(g, 1, 1, col(0xfff0c0), 4, 2);
+});
+T.door = tex(16, 24, (g) => {
+  for (let x = 0; x < 16; x++) { const b = (x % 4 === 0) ? 0x2f1d12 : 0x5a3822; for (let y = 0; y < 24; y++) px(g, x, y, col(b, .9 + rnd() * .15)); }
+  for (let x = 0; x < 16; x++) { px(g, x, 0, col(0x8a603a)); px(g, x, 1, col(0x2a1a10)); }
+  px(g, 11, 12, col(0xc8a35a), 2, 2);
+});
+T.cloth = tex(16, 16, (g) => {
+  for (let x = 0; x < 16; x++) for (let y = 0; y < 16; y++) px(g, x, y, col((x / 4 | 0) % 2 ? 0xe4d3b0 : 0x9b3a30, .92 + rnd() * .12));
+});
+T.clothBlue = tex(16, 16, (g) => {
+  for (let x = 0; x < 16; x++) for (let y = 0; y < 16; y++) px(g, x, y, col((x / 4 | 0) % 2 ? 0xded2b8 : 0x36536b, .92 + rnd() * .12));
+});
+T.straw = tex(16, 16, (g) => {
+  noise(g, 0, 0, 16, 16, 0xb99a4e, .08);
+  for (let k = 0; k < 28; k++) px(g, rnd() * 16 | 0, rnd() * 16 | 0, col(rnd() < .5 ? 0xd6b968 : 0x8c7138), 1, 1 + (rnd() * 3 | 0));
+});
+T.banner = tex(16, 24, (g) => {
+  px(g, 0, 0, '#7a2a24', 16, 24);
+  for (let y = 0; y < 24; y++) for (let x = 0; x < 16; x++) if ((x > 3 && x < 12 && y > 4 && y < 20) || (y > 9 && y < 15 && x > 1 && x < 15)) px(g, x, y, '#e5d6b8');
+  px(g, 0, 0, '#3a1512', 16, 2); px(g, 0, 22, '#3a1512', 16, 2);
+});
+
+T.cobble.repeat.set(16, 22);
+T.dirt.repeat.set(4, 4);
+T.plaster.repeat.set(1, 1);
+
+// ------------------------------------------------------------ materials
+const L = (o) => lam(o), B = (o) => basic(o);
+const MAT = {
+  ground: L({ map: T.cobble, color: 0xffffff }),
+  dirt: L({ map: T.dirt, color: 0xffffff }),
+  plaster: L({ map: T.plaster, color: 0xffffff }),
+  plaster2: L({ map: T.plaster, color: 0xe6d7bd }),
+  timber: L({ map: T.timber, color: 0xffffff }),
+  stone: L({ map: T.stone, color: 0xffffff }),
+  roof: L({ map: T.roof, color: 0xffffff, side: THREE.DoubleSide }),
+  roof2: L({ map: T.roof, color: 0xb9a28c, side: THREE.DoubleSide }),
+  cloth: L({ map: T.cloth, color: 0xffffff, side: THREE.DoubleSide }),
+  clothBlue: L({ map: T.clothBlue, color: 0xffffff, side: THREE.DoubleSide }),
+  window: B({ map: T.window, color: 0xffdca0 }),
+  door: L({ map: T.door, color: 0xffffff }),
+  straw: L({ map: T.straw, color: 0xffffff }),
+  banner: L({ map: T.banner, color: 0xffffff, side: THREE.DoubleSide }),
+  dark: L({ color: 0x22252b }),
+  metal: L({ color: 0x555a60 }),
+  skin: L({ color: 0xe0b08a }),
+  shadow: B({ color: 0x000000, transparent: true, opacity: 0.24, depthWrite: false }),
+};
+const matCache = new Map();
+const lamC = (c) => { if (!matCache.has(c)) matCache.set(c, L({ color: c })); return matCache.get(c); };
+
+// ------------------------------------------------------------ geometry helpers
+function box(parent, w, h, d, mat, x, y, z, rx = 0, ry = 0, rz = 0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z); m.rotation.set(rx, ry, rz); parent.add(m); return m;
+}
+function plane(parent, w, h, mat, x, y, z, rx = 0, ry = 0) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  m.position.set(x, y, z); m.rotation.set(rx, ry, 0); parent.add(m); return m;
+}
+function cyl(parent, rt, rb, h, seg, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+  m.position.set(x, y, z); parent.add(m); return m;
+}
+function cone(parent, r, h, seg, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), mat);
+  m.position.set(x, y, z); parent.add(m); return m;
+}
+function gableGeo(w, d, h) {
+  const hw = w / 2, hd = d / 2;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([
+    -hw, 0, -hd, hw, 0, -hd, hw, 0, hd, -hw, 0, hd, 0, h, -hd, 0, h, hd
+  ], 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1, .5, .5, .5, .5], 2));
+  g.setIndex([0, 1, 4, 1, 5, 4, 1, 2, 5, 2, 3, 5, 3, 0, 4, 3, 4, 5, 0, 3, 2, 0, 2, 1]);
+  g.computeVertexNormals(); return g;
+}
+function gable(parent, w, d, h, mat, x, y, z) {
+  const m = new THREE.Mesh(gableGeo(w, d, h), mat); m.position.set(x, y, z); parent.add(m); return m;
+}
+
+// Merge every static mesh by material. The town goes from ~350 draw calls to ~20.
+function mergeByMaterial(root) {
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const byMat = new Map();
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const g = o.geometry.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+    for (const name of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name);
+    g.clearGroups();
+    if (!byMat.has(o.material.uuid)) byMat.set(o.material.uuid, { mat: o.material, geos: [] });
+    byMat.get(o.material.uuid).geos.push(g);
+  });
+  const out = [];
+  for (const { mat, geos } of byMat.values()) {
+    const merged = mergeGeometries(geos, false);
+    if (merged) out.push(new THREE.Mesh(merged, mat));
+    for (const g of geos) g.dispose();
+  }
+  for (const child of [...root.children]) root.remove(child);
+  for (const m of out) root.add(m);
+}
+
+function bakeSceneStatics() {
+  const root = new THREE.Group();
+  scene.add(root);
+  for (const child of [...scene.children]) if (child !== root) root.add(child);
+  // add() above reparents, so scene now only holds root: merge in place and flatten.
+  mergeByMaterial(root);
+  for (const child of [...root.children]) {
+    root.remove(child);
+    child.matrixAutoUpdate = false;
+    child.updateMatrix();
+    scene.add(child);
+  }
+  scene.remove(root);
+}
+
+// ------------------------------------------------------------ ground + town
+plane(scene, 72, 94, MAT.ground, 0, 0, -8, -Math.PI / 2);
+plane(scene, 16, 14, MAT.dirt, 0, 0.02, 0, -Math.PI / 2);
+for (const [x, z, w, d] of [[-1.8, 2.8, 2.4, 1.2], [2.3, -1.6, 1.7, 0.9], [-3.2, -4.8, 2.0, 1.0]]) {
+  const p = plane(scene, w, d, B({ color: 0x343b42, transparent: true, opacity: 0.55 }), x, 0.028, z, -Math.PI / 2);
+}
+
+function house(x, z, w, d, h, side, alt, shop) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  box(g, w, h, d, alt ? MAT.plaster2 : MAT.plaster, 0, h / 2, 0);
+  box(g, w + 0.12, 0.7, d + 0.12, MAT.stone, 0, 0.35, 0);
+  const fx = side * (w / 2 + 0.035), fz = d / 2 - 0.18;
+  for (const zz of [-fz, 0, fz]) box(g, 0.13, h - 0.12, 0.13, MAT.timber, fx, h / 2, zz);
+  for (const yy of [0.75, h * 0.55, h - 0.35]) box(g, 0.13, 0.13, d - 0.1, MAT.timber, fx, yy, 0);
+  for (const zz of [-d / 4, d / 4]) { const b = box(g, 0.1, 1.35, 0.1, MAT.timber, fx, h * 0.77, zz); b.rotation.x = 0.55; }
+  for (const yy of [h * 0.34, h * 0.72]) for (const zz of [-d * 0.27, d * 0.27]) {
+    box(g, 0.07, 0.8, 0.66, MAT.window, fx + side * 0.02, yy, zz);
+    box(g, 0.1, 0.9, 0.06, MAT.timber, fx + side * 0.03, yy, zz);
+    box(g, 0.1, 0.06, 0.76, MAT.timber, fx + side * 0.03, yy, zz);
+  }
+  box(g, 0.1, 1.45, 0.85, MAT.door, fx + side * 0.02, 0.73, 0);
+  box(g, 0.14, 0.16, 1.0, MAT.timber, fx + side * 0.035, 1.48, 0);
+  const rh = h * 0.55;
+  gable(g, w + 0.9, d + 0.9, rh, alt ? MAT.roof2 : MAT.roof, 0, h, 0);
+  box(g, 0.16, 0.16, d + 1.0, MAT.timber, 0, h + rh, 0);
+  box(g, 0.5, 1.0, 0.5, MAT.stone, w * 0.28, h + rh * 0.55, d * 0.18);
+  for (const xx of [-w / 2 + 0.2, w / 2 - 0.2]) box(g, 0.12, 0.12, d, MAT.timber, xx, h * 0.55, 0);
+  if (shop) {
+    const aw = plane(g, 2.4, 1.1, MAT.cloth, fx + side * 0.55, 2.0, 0, -Math.PI / 2 + 0.22, side * Math.PI / 2);
+    box(g, 0.08, 0.55, 0.7, MAT.banner, fx + side * 0.5, 2.35, 1.4);
+  }
+  return g;
+}
+house(-8.2, -16.0, 5.2, 5.0, 5.8, 1, false, false);
+house(-8.4, -9.5, 5.6, 5.2, 6.4, 1, true, true);
+house(-8.0, -2.5, 5.0, 4.8, 5.4, 1, false, false);
+house(-8.3, 4.5, 5.8, 5.4, 6.0, 1, true, true);
+house(8.2, -15.0, 5.4, 5.2, 6.0, -1, true, false);
+house(8.4, -8.5, 5.2, 5.0, 5.6, -1, false, true);
+house(8.0, -1.5, 5.6, 5.4, 6.2, -1, true, false);
+house(8.3, 5.0, 5.0, 4.8, 5.2, -1, false, true);
+
+// church tower at the end of the street
+const church = new THREE.Group(); church.position.set(-1, 0, -24); scene.add(church);
+box(church, 4.2, 12, 4.2, MAT.stone, 0, 6, 0);
+const spire = new THREE.Mesh(new THREE.ConeGeometry(3.1, 7, 4), MAT.roof); spire.position.y = 15.5; spire.rotation.y = Math.PI / 4; church.add(spire);
+box(church, 0.12, 1.1, 0.12, MAT.timber, 0, 19.7, 0);
+box(church, 0.7, 0.12, 0.12, MAT.timber, 0, 19.85, 0);
+plane(church, 1.15, 1.15, B({ color: 0xf0e2b8 }), 0, 9.4, 2.02);
+box(church, 0.06, 0.4, 0.03, MAT.dark, 0, 9.55, 2.04);
+box(church, 0.3, 0.06, 0.03, MAT.dark, 0.1, 9.35, 2.04);
+box(church, 11, 7, 8, MAT.stone, 0, 3.5, -4.6);
+gable(church, 11.5, 8.5, 3.5, MAT.roof2, 0, 7, -4.6);
+for (const x of [-3.2, -1.4, 1.4, 3.2]) box(church, 0.9, 2.2, 0.08, MAT.window, x, 4, 0.02);
+
+// distant silhouette rooftops
+for (let i = 0; i < 15; i++) {
+  const x = -25 + i * 3.6, h = 3 + rnd() * 5;
+  box(scene, 3.1, h, 3, MAT.dark, x, h / 2, -34);
+  gable(scene, 3.5, 3.4, 1.4, MAT.dark, x, h, -34);
+}
+
+// ------------------------------------------------------------ props
+function barrel(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  cyl(g, 0.42, 0.42, 0.9, 8, MAT.timber, 0, 0.45, 0);
+  for (const y of [0.2, 0.7]) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.035, 4, 8), MAT.metal); t.rotation.x = Math.PI / 2; t.position.y = y; g.add(t); }
+}
+function crate(x, z, s = 1) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  box(g, 0.7 * s, 0.7 * s, 0.7 * s, MAT.timber, 0, 0.35 * s, 0);
+  box(g, 0.74 * s, 0.06, 0.06, MAT.timber, 0, 0.35 * s, 0.36 * s);
+}
+function stall(x, z, rot, blue) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+  box(g, 2.8, 0.8, 1.1, MAT.timber, 0, 0.5, 0);
+  box(g, 2.9, 0.08, 1.2, MAT.timber, 0, 0.94, 0);
+  for (const [dx, dz] of [[-1.2, -0.45], [1.2, -0.45], [-1.2, 0.45], [1.2, 0.45]]) box(g, 0.12, 2.1, 0.12, MAT.timber, dx, 1.05, dz);
+  const cm = blue ? MAT.clothBlue : MAT.cloth;
+  plane(g, 3.1, 2.0, cm, 0, 2.2, 0, -Math.PI / 2 + 0.1, 0);
+  box(g, 3.1, 0.24, 0.06, cm, 0, 2.05, 1.03);
+  for (let i = 0; i < 4; i++) box(g, 0.28, 0.28, 0.28, lamC([0x8d6b3d, 0x6b7a4a, 0x9a5a3a][i % 3]), -0.9 + i * 0.6, 1.08, 0.05);
+  barrel(x + 1.8, z + 0.4); crate(x - 1.8, z - 0.2, 0.8);
+}
+stall(-4.2, 3.1, 0.1, false);
+stall(4.1, 4.0, -0.15, true);
+barrel(-4.7, -0.8); barrel(-4.2, -0.4); crate(-4.8, -1.4, 1.1); crate(4.5, 1.4, 0.9);
+const cart = new THREE.Group(); cart.position.set(-4.6, 0, -9.2); cart.rotation.y = 0.5; scene.add(cart);
+box(cart, 2.4, 0.3, 1.2, MAT.timber, 0, 0.72, 0);
+box(cart, 2.4, 0.5, 0.12, MAT.timber, 0, 0.95, 0.56);
+for (const s of [-1, 1]) for (const x of [-0.8, 0.8]) {
+  const w = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.1, 8), MAT.timber);
+  w.rotation.x = Math.PI / 2; w.position.set(x, 0.52, s * 0.64); cart.add(w);
+}
+box(cart, 1.4, 0.1, 0.1, MAT.timber, 0, 0.8, 0.9, 0, 0, 0.2);
+
+const well = new THREE.Group(); well.position.set(3.8, 0, -3.2); scene.add(well);
+cyl(well, 1.1, 1.2, 0.9, 8, MAT.stone, 0, 0.45, 0);
+cyl(well, 0.85, 0.85, 0.1, 8, MAT.dark, 0, 0.96, 0);
+for (const x of [-0.9, 0.9]) box(well, 0.14, 2.0, 0.14, MAT.timber, x, 1.0, 0);
+gable(well, 2.4, 1.6, 0.8, MAT.roof2, 0, 2.0, 0);
+box(well, 0.1, 0.1, 1.2, MAT.timber, 0, 1.8, 0);
+
+// hanging banners
+for (const [x, z, side] of [[-5.3, -7.2, 1], [-5.3, -0.2, 1], [5.3, -6.0, -1], [5.3, 2.0, -1]]) {
+  plane(scene, 0.8, 2.2, MAT.banner, x + side * 0.08, 3.2, z, 0, side * Math.PI / 2);
+  box(scene, 0.06, 0.06, 1.0, MAT.timber, x + side * 0.12, 4.3, z);
+}
+
+bakeSceneStatics();
+
+// torches (unlit until the stage scene)
+const torches = [];
+function torch(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  box(g, 0.1, 1.8, 0.1, MAT.timber, 0, 0.9, 0);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.48, 5), B({ color: 0xffb13a }));
+  flame.position.y = 1.95; g.add(flame);
+  torches.push({ flame, phase: rnd() * 6.28 });
+}
+torch(-3.6, 1.8); torch(3.6, 1.8); torch(-3.6, -5.4); torch(3.6, -5.4);
+
+// ------------------------------------------------------------ people
+function makePerson(o = {}) {
+  const female = !!o.female, dress = o.dress ?? 0x8c3b32, cloth = o.cloth ?? 0x3d5a6e;
+  const skin = o.skin ?? 0xe0b08a, hair = o.hair ?? 0x35251a, detail = !!o.detail;
+  const root = new THREE.Group();
+  const body = new THREE.Group(); root.add(body);
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(0.33, 8), MAT.shadow);
+  sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012; root.add(sh);
+
+  const legL = new THREE.Group(), legR = new THREE.Group();
+  legL.position.set(-0.11, 0.72, 0); legR.position.set(0.11, 0.72, 0);
+  for (const [leg, s] of [[legL, -1], [legR, 1]]) {
+    box(leg, 0.13, 0.72, 0.15, lamC(0x4a3a2e), 0, -0.36, 0);
+    box(leg, 0.15, 0.12, 0.27, lamC(0x2b2118), 0, -0.72, 0.05);
+    root.add(leg);
+  }
+  if (female) {
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.5, 0.85, 6), lamC(dress)); skirt.position.y = 0.55; body.add(skirt);
+    box(body, 0.34, 0.7, 0.03, lamC(0xd8c8a8), 0, 0.55, 0.255);
+    box(body, 0.4, 0.5, 0.27, lamC(dress), 0, 1.12, 0);
+    box(body, 0.42, 0.08, 0.29, lamC(0x3a2a22), 0, 0.83, 0);
+  } else {
+    box(body, 0.42, 0.62, 0.27, lamC(cloth), 0, 1.05, 0);
+    box(body, 0.44, 0.08, 0.29, lamC(0x2a2018), 0, 0.78, 0);
+    box(body, 0.18, 0.22, 0.04, lamC(0x8a6a3a), 0, 1.1, 0.15);
+  }
+  const armL = new THREE.Group(), armR = new THREE.Group();
+  armL.position.set(-0.25, 1.28, 0); armR.position.set(0.25, 1.28, 0);
+  for (const [arm, s] of [[armL, -1], [armR, 1]]) {
+    box(arm, 0.11, 0.55, 0.13, lamC(female ? 0xd8c8a8 : cloth), 0, -0.25, 0);
+    box(arm, 0.12, 0.13, 0.14, lamC(skin), 0, -0.55, 0);
+    body.add(arm);
+  }
+  const head = new THREE.Group(); head.position.set(0, 1.56, 0); body.add(head);
+  box(head, 0.28, 0.3, 0.26, lamC(skin), 0, 0.12, 0);
+  if (female) {
+    box(head, 0.32, 0.14, 0.3, lamC(0xe8e0cc), 0, 0.3, -0.01);
+    box(head, 0.34, 0.28, 0.06, lamC(0xe8e0cc), 0, 0.16, -0.14);
+    box(head, 0.08, 0.26, 0.06, lamC(hair), 0, 0.12, 0.13);
+  } else {
+    box(head, 0.3, 0.12, 0.28, lamC(hair), 0, 0.3, 0);
+    if (o.hat) cyl(head, 0.2, 0.24, 0.12, 6, lamC(0x2f2a24), 0, 0.39, 0);
+  }
+  if (detail) {
+    box(head, 0.05, 0.035, 0.02, MAT.dark, -0.07, 0.15, 0.135);
+    box(head, 0.05, 0.035, 0.02, MAT.dark, 0.07, 0.15, 0.135);
+    box(head, 0.04, 0.06, 0.05, lamC(0xd09a76), 0, 0.09, 0.145);
+    box(head, 0.07, 0.015, 0.01, MAT.dark, 0, 0.02, 0.135);
+  }
+  if (o.scale) root.scale.setScalar(o.scale);
+  return { root, body, head, armL, armR, legL, legR, phase: 0, join: -1, energy: 1 };
+}
+
+// heroine: the first dancer
+const HERO_HOME = new THREE.Vector3(0, 0, 0.1);
+const HERO_START = new THREE.Vector3(-4.2, 0, 2.4);
+const heroine = makePerson({ female: true, dress: 0x8e2f2a, cloth: 0xb5483b, skin: 0xe6b48c, hair: 0x2b1d15, detail: true, scale: 1.05 });
+heroine.root.position.copy(HERO_START); heroine.root.visible = false; scene.add(heroine.root);
+// heroine: a little white coif and dark overskirt accent
+box(heroine.body, 0.36, 0.18, 0.3, lamC(0xe8e0cc), 0, 1.43, -0.01);
+
+const MAN_HOME = new THREE.Vector3(1.15, 0, 0.25);
+const MAN_START = new THREE.Vector3(4.0, 0, 1.8);
+const heroMan = makePerson({ female: false, cloth: 0x2f4f6e, skin: 0xc98d68, hair: 0x2a1c14, hat: true, detail: true, scale: 1.02 });
+heroMan.root.position.copy(MAN_START); heroMan.root.visible = false; scene.add(heroMan.root);
+
+// crowd: 42 dancers drawn with 10 instanced meshes instead of ~450 individual boxes
+const CROWD_N = 42;
+const crowd = [];
+const cMat = ps1(new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }));
+const cShadowMat = ps1(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.26, depthWrite: false }));
+const CG = {
+  torso: new THREE.BoxGeometry(0.42, 0.62, 0.27),
+  skirt: new THREE.CylinderGeometry(0.24, 0.5, 0.85, 6),
+  head: new THREE.BoxGeometry(0.28, 0.3, 0.26),
+  hair: new THREE.BoxGeometry(0.3, 0.12, 0.28),
+  hat: new THREE.CylinderGeometry(0.2, 0.24, 0.12, 6),
+  arm: new THREE.BoxGeometry(0.11, 0.55, 0.13),
+  leg: new THREE.BoxGeometry(0.13, 0.72, 0.15),
+  shadow: new THREE.CircleGeometry(0.33, 8)
+};
+function inst(geo, mat) {
+  const m = new THREE.InstancedMesh(geo, mat, CROWD_N);
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  m.frustumCulled = false;
+  scene.add(m);
+  return m;
+}
+const M = {
+  torso: inst(CG.torso, cMat), skirt: inst(CG.skirt, cMat),
+  head: inst(CG.head, cMat), hair: inst(CG.hair, cMat), hat: inst(CG.hat, cMat),
+  armL: inst(CG.arm, cMat), armR: inst(CG.arm, cMat),
+  legL: inst(CG.leg, cMat), legR: inst(CG.leg, cMat),
+  shadow: inst(CG.shadow, cShadowMat)
+};
+const CROWD_MESHES = Object.values(M);
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+for (const mesh of CROWD_MESHES) for (let i = 0; i < CROWD_N; i++) mesh.setMatrixAt(i, ZERO);
+
+function makeCrowdRig() {
+  const root = new THREE.Object3D();
+  const body = new THREE.Object3D(); root.add(body);
+  const torsoM = new THREE.Object3D(); torsoM.position.y = 1.05; body.add(torsoM);
+  const skirtM = new THREE.Object3D(); skirtM.position.y = 0.55; body.add(skirtM);
+  const armL = new THREE.Object3D(); armL.position.set(-0.25, 1.28, 0); body.add(armL);
+  const armR = new THREE.Object3D(); armR.position.set(0.25, 1.28, 0); body.add(armR);
+  const armLM = new THREE.Object3D(); armLM.position.y = -0.25; armL.add(armLM);
+  const armRM = new THREE.Object3D(); armRM.position.y = -0.25; armR.add(armRM);
+  const head = new THREE.Object3D(); head.position.y = 1.56; body.add(head);
+  const headM = new THREE.Object3D(); headM.position.y = 0.12; head.add(headM);
+  const hairM = new THREE.Object3D(); hairM.position.y = 0.3; head.add(hairM);
+  const hatM = new THREE.Object3D(); hatM.position.y = 0.39; head.add(hatM);
+  const legL = new THREE.Object3D(); legL.position.set(-0.11, 0.72, 0); root.add(legL);
+  const legR = new THREE.Object3D(); legR.position.set(0.11, 0.72, 0); root.add(legR);
+  const legLM = new THREE.Object3D(); legLM.position.y = -0.36; legL.add(legLM);
+  const legRM = new THREE.Object3D(); legRM.position.y = -0.36; legR.add(legRM);
+  const shadowM = new THREE.Object3D(); shadowM.position.y = 0.012; shadowM.rotation.x = -Math.PI / 2; root.add(shadowM);
+  return { root, body, torsoM, skirtM, armL, armR, armLM, armRM, head, headM, hairM, hatM, legL, legR, legLM, legRM, shadowM };
+}
+
+const DRESS = [0x7c3530, 0x5a4a6b, 0x3d5a6e, 0x7a5b36, 0x4f5f42];
+const CLOTH = [0x3d5a6e, 0x6b4a32, 0x4f5f42, 0x6b3a3a, 0x4a4e58];
+const SKIN = [0xe0b08a, 0xc98d68, 0x9c6b4c, 0xf0c9a8];
+const HAIR = [0x2b1d15, 0x4a3020, 0x6b4a2a, 0x1f1814];
+const COIF = new THREE.Color(0xe8e0cc), TROUSER = new THREE.Color(0x4a3a2e), HAT = new THREE.Color(0x2f2a24);
+
+for (let i = 0; i < CROWD_N; i++) {
+  let x, z;
+  if (i < 8) {
+    x = (i % 2 ? 1 : -1) * (3.8 + rnd() * 2.2);
+    z = -1.4 + rnd() * 5.6;
+  } else {
+    const a = rnd() * Math.PI * 2, r = 2.4 + rnd() * 4.8;
+    x = Math.cos(a) * r; z = Math.sin(a) * r * 0.72 + 0.4;
+    if (z < -4.1) z = -4.1 + rnd() * 1.4;
+    if (Math.abs(x) < 1.3 && z > -1.4) x += (x < 0 ? -1 : 1) * 1.6;
+  }
+  const female = rnd() < 0.46;
+  const rig = makeCrowdRig();
+  const p = Object.assign(rig, {
+    female, hat: !female && rnd() < 0.42, visible: i < 8,
+    home: new THREE.Vector3(x, 0, z),
+    spawn: new THREE.Vector3(x * 1.9 + (x < 0 ? -2 : 2), 0, z + (z < 0 ? -4.5 : 4.5)),
+    baseRot: Math.atan2(-x, -z), face: Math.atan2(-x, -z),
+    phase: rnd() * 6.28, energy: 0.65 + rnd() * 0.55, tired: rnd() < 0.35,
+    role: i < 8 ? 'villager' : 'crowd',
+    join: i < 8 ? -1 : (i < 16 ? 6.4 + rnd() * 2.1 : 17.8 + (i - 16) * 0.36 + rnd() * 0.2)
+  });
+  p.root.position.set(x, 0, z);
+  p.root.rotation.y = p.baseRot;
+  p.root.scale.setScalar(0.9 + rnd() * 0.16);
+  crowd.push(p);
+
+  const dress = new THREE.Color(DRESS[i % 5]);
+  const cloth = new THREE.Color(CLOTH[(i + 2) % 5]);
+  const skin = new THREE.Color(SKIN[i % 4]);
+  const hair = new THREE.Color(HAIR[i % 4]);
+  M.torso.setColorAt(i, female ? dress : cloth);
+  M.skirt.setColorAt(i, dress);
+  M.head.setColorAt(i, skin);
+  M.hair.setColorAt(i, female ? COIF : hair);
+  M.hat.setColorAt(i, HAT);
+  M.armL.setColorAt(i, female ? COIF : cloth);
+  M.armR.setColorAt(i, female ? COIF : cloth);
+  M.legL.setColorAt(i, TROUSER);
+  M.legR.setColorAt(i, TROUSER);
+}
+for (const mesh of [M.torso, M.skirt, M.head, M.hair, M.hat, M.armL, M.armR, M.legL, M.legR]) {
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+}
+
+function writeCrowd(i, p) {
+  if (!p.visible) {
+    for (const mesh of CROWD_MESHES) mesh.setMatrixAt(i, ZERO);
+    return;
+  }
+  M.torso.setMatrixAt(i, p.torsoM.matrixWorld);
+  M.skirt.setMatrixAt(i, p.female ? p.skirtM.matrixWorld : ZERO);
+  M.head.setMatrixAt(i, p.headM.matrixWorld);
+  M.hair.setMatrixAt(i, p.hairM.matrixWorld);
+  M.hat.setMatrixAt(i, p.hat ? p.hatM.matrixWorld : ZERO);
+  M.armL.setMatrixAt(i, p.armLM.matrixWorld);
+  M.armR.setMatrixAt(i, p.armRM.matrixWorld);
+  M.legL.setMatrixAt(i, p.legLM.matrixWorld);
+  M.legR.setMatrixAt(i, p.legRM.matrixWorld);
+  M.shadow.setMatrixAt(i, p.shadowM.matrixWorld);
+}
+
+// ------------------------------------------------------------ stage + musicians + officials
+const stage = new THREE.Group(); stage.position.set(0, 0, -8.6); stage.visible = false; scene.add(stage);
+const stageSet = new THREE.Group(); stage.add(stageSet);
+box(stageSet, 6.6, 0.35, 3.0, MAT.timber, 0, 1.3, 0);
+for (const x of [-3, 3]) for (const z of [-1.3, 1.3]) box(stageSet, 0.25, 1.3, 0.25, MAT.timber, x, 0.65, z);
+box(stageSet, 6.8, 0.15, 0.15, MAT.timber, 0, 2.6, -1.4);
+plane(stageSet, 6.4, 2.2, MAT.cloth, 0, 2.3, -1.52);
+box(stageSet, 6.4, 0.16, 0.1, MAT.banner, 0, 3.45, -1.5);
+box(stageSet, 2.2, 0.18, 0.9, MAT.timber, 0, 0.55, 1.8);
+box(stageSet, 2.2, 0.18, 0.9, MAT.timber, 0, 0.9, 1.4);
+box(stageSet, 6.6, 0.12, 0.12, MAT.timber, 0, 1.55, 1.45);
+mergeByMaterial(stageSet);
+
+function makeMusician(x, z, type) {
+  const p = makePerson({ female: false, cloth: type === 'lute' ? 0x6b4a2f : 0x4a3b5a, skin: 0xd0a07a, hair: 0x2a1c14, hat: true, detail: true, scale: 0.95 });
+  p.root.position.set(x, 1.48, z); stage.add(p.root);
+  if (type === 'lute') {
+    box(p.root, 0.3, 0.5, 0.12, MAT.timber, -0.3, 0.85, 0.2, 0.3, 0, 0.4);
+    box(p.root, 0.08, 0.7, 0.08, MAT.timber, -0.05, 1.12, 0.18, 0.3, 0, 0.9);
+    p.type = 'lute';
+  } else {
+    cyl(p.root, 0.34, 0.34, 0.32, 8, MAT.timber, 0, 0.75, 0.28);
+    box(p.root, 0.05, 0.5, 0.05, MAT.timber, -0.25, 1.0, 0.28, 0, 0, -0.5);
+    box(p.root, 0.05, 0.5, 0.05, MAT.timber, 0.25, 1.0, 0.28, 0, 0, 0.5);
+    p.type = 'drum';
+  }
+  return p;
+}
+const musicians = [makeMusician(-1.35, -0.15, 'lute'), makeMusician(1.3, -0.1, 'drum')];
+
+const officials = new THREE.Group(); officials.visible = false; stage.add(officials);
+for (const x of [-2.6, 2.6]) {
+  const p = makePerson({ female: false, cloth: 0x24252b, skin: 0xd0a07a, hair: 0x1f1814, hat: true, detail: false, scale: 0.98 });
+  p.root.position.set(x, 1.48, -0.7); p.root.rotation.y = x < 0 ? 0.25 : -0.25; officials.add(p.root);
+  box(p.root, 0.22, 0.55, 0.05, lamC(0xd8c8a8), 0.25, 0.95, 0.15, 0, 0, 0.2);
+}
+
+// ------------------------------------------------------------ dust motes (one Points draw call)
+const MOTE_N = 46;
+const motes = [];
+const motePos = new Float32Array(MOTE_N * 3);
+for (let i = 0; i < MOTE_N; i++) {
+  const x = -8 + rnd() * 16, y = 0.4 + rnd() * 4.5, z = -10 + rnd() * 15;
+  motes.push({ x0: x, y0: y, z0: z, ph: rnd() * 6.28, sp: 0.18 + rnd() * 0.22 });
+  motePos[i * 3] = x; motePos[i * 3 + 1] = y; motePos[i * 3 + 2] = z;
+}
+const moteGeo = new THREE.BufferGeometry();
+moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3).setUsage(THREE.DynamicDrawUsage));
+const motePoints = new THREE.Points(moteGeo, new THREE.PointsMaterial({
+  color: 0xd8c8a8, size: 0.055, sizeAttenuation: true, transparent: true, opacity: 0.38, depthWrite: false
+}));
+motePoints.frustumCulled = false;
+scene.add(motePoints);
+
+// ------------------------------------------------------------ lights
+scene.add(new THREE.HemisphereLight(0x9fb2c8, 0x4a3a2a, 0.78));
+const key = new THREE.DirectionalLight(0xffd0a0, 1.05); key.position.set(-7, 11, 7); scene.add(key);
+const fill = new THREE.DirectionalLight(0x7f9fc8, 0.38); fill.position.set(8, 5, -7); scene.add(fill);
+
+// ------------------------------------------------------------ camera shots
+const SHOTS = [
+  { t0: 0.0, t1: 2.8, p0: [0.2, 2.0, 10.2], p1: [0.0, 1.85, 7.2], look0: [0, 1.3, -1.5], look1: [0, 1.2, -1.0], fov0: 52, fov1: 50, shake: 0.2 },
+  { t0: 2.8, t1: 6.3, p0: [-2.7, 1.75, 7.0], p1: [-1.3, 1.55, 5.4], look0: [0, 1.4, -3.0], look1: [0, 1.1, -1.5], fov0: 50, fov1: 48, shake: 0.3 },
+  { t0: 6.3, t1: 9.6, p0: [1.9, 1.55, 5.0], p1: [0.8, 1.45, 4.1], look0: [0, 1.15, 0], look1: [0, 1.05, 0], fov0: 46, fov1: 43, shake: 0.25 },
+  { t0: 9.6, t1: 13.0, p0: [2.7, 0.6, 3.5], p1: [1.4, 0.85, 3.0], look0: [0, 0.9, 0], look1: [0, 0.8, 0], fov0: 48, fov1: 45, shake: 0.3 },
+  { t0: 13.0, t1: 17.4, p0: [-2.1, 1.8, 5.8], p1: [-0.8, 1.6, 4.7], look0: [0, 1.1, 0], look1: [0, 1.0, 0], fov0: 50, fov1: 47, shake: 0.35 },
+  { t0: 17.4, t1: 21.0, p0: [1.1, 2.25, 5.4], p1: [0.4, 1.95, 4.4], look0: [0, 1.1, -0.6], look1: [0, 1.0, -0.4], fov0: 52, fov1: 49, shake: 0.55 },
+  { t0: 21.0, t1: 25.0, p0: [-3.6, 3.3, 6.2], p1: [-2.0, 2.7, 4.9], look0: [0, 1.0, -0.8], look1: [0, 0.9, -0.5], fov0: 56, fov1: 52, shake: 0.6 },
+  { t0: 25.0, t1: 27.0, p0: [2.3, 1.25, 3.9], p1: [1.6, 1.15, 3.4], look0: [0, 0.95, 0], look1: [0, 0.9, 0], fov0: 44, fov1: 42, shake: 0.7 },
+  { t0: 27.0, t1: 29.6, p0: [-1.9, 0.85, 3.5], p1: [-1.0, 0.95, 3.1], look0: [0, 0.75, 0], look1: [0, 0.7, 0], fov0: 44, fov1: 42, shake: 0.7 },
+  { t0: 29.6, t1: 33.0, p0: [0.85, 1.55, 2.55], p1: [0.35, 1.5, 2.15], look0: [0, 1.4, 0], look1: [0, 1.38, 0], fov0: 38, fov1: 35, shake: 0.5 },
+  { t0: 33.0, t1: 37.0, p0: [1.7, 0.38, 3.1], p1: [0.8, 0.48, 2.6], look0: [0, 0.35, 0], look1: [0, 0.4, 0], fov0: 42, fov1: 40, shake: 0.8 },
+  { t0: 37.0, t1: 42.5, p0: [-3.9, 2.9, 7.2], p1: [-2.2, 2.3, 5.7], look0: [0, 0.9, -1.0], look1: [0, 0.8, -0.6], fov0: 56, fov1: 53, shake: 1.0 },
+  { t0: 42.5, t1: 46.0, p0: [0.0, 1.9, 3.9], p1: [0.0, 1.75, 3.3], look0: [0, 1.7, -6.5], look1: [0, 1.65, -6.5], fov0: 46, fov1: 44, shake: 0.3 },
+  { t0: 46.0, t1: 50.0, p0: [-2.5, 2.25, 5.0], p1: [-1.4, 1.95, 4.1], look0: [0, 1.1, -2.0], look1: [0, 1.0, -1.4], fov0: 50, fov1: 47, shake: 0.5 },
+  { t0: 50.0, t1: 54.8, p0: [2.9, 2.65, 6.6], p1: [1.8, 2.25, 5.3], look0: [0, 1.0, -1.0], look1: [0, 0.9, -0.8], fov0: 54, fov1: 51, shake: 0.7 },
+  { t0: 54.8, t1: 58.5, p0: [-3.6, 3.9, 8.2], p1: [-2.5, 3.5, 6.6], look0: [0, 0.9, -1.0], look1: [0, 0.8, -0.8], fov0: 56, fov1: 53, shake: 0.6 },
+  { t0: 58.5, t1: 62.5, p0: [0.0, 6.2, 13.5], p1: [0.0, 8.2, 18.5], look0: [0, 0.6, -2.0], look1: [0, 0.5, -2.0], fov0: 54, fov1: 52, shake: 0.3 },
+  { t0: 62.5, t1: 71.0, p0: [0.0, 9.2, 20.0], p1: [0.0, 10.8, 25.0], look0: [0, 0.4, -2.0], look1: [0, 0.3, -2.0], fov0: 54, fov1: 52, shake: 0.0 },
+];
+
+// ------------------------------------------------------------ captions
+const CAPS = SPEC.caps || [];
+
+// ------------------------------------------------------------ animation helpers
+function walk(p, t, speed) {
+  const s = Math.sin(t * 7.2 * speed + p.phase);
+  p.legL.rotation.x = s * 0.55; p.legR.rotation.x = -s * 0.55;
+  p.armL.rotation.x = -s * 0.35; p.armR.rotation.x = s * 0.35;
+  p.armL.rotation.z = 0.08; p.armR.rotation.z = -0.08;
+  p.body.position.y = Math.abs(s) * 0.035;
+  p.body.rotation.z = 0; p.head.rotation.x = 0; p.head.rotation.z = 0;
+}
+function idle(p, t) {
+  const s = Math.sin(t * 1.4 + p.phase);
+  p.body.position.y = 0.01 + s * 0.008;
+  p.body.rotation.z = s * 0.012;
+  p.armL.rotation.x = 0.03; p.armR.rotation.x = 0.03;
+  p.armL.rotation.z = 0.1; p.armR.rotation.z = -0.1;
+  p.legL.rotation.x = 0; p.legR.rotation.x = 0;
+  p.head.rotation.z = Math.sin(t * 0.7 + p.phase) * 0.08;
+  p.head.rotation.x = 0;
+}
+function dance(p, t, e) {
+  const s = Math.sin(t * 4.6 + p.phase), s2 = Math.sin(t * 3.1 + p.phase + 0.6);
+  p.body.position.y = Math.abs(s) * 0.055 * e;
+  p.body.rotation.z = s2 * 0.06 * e;
+  p.armL.rotation.z = 0.4 + s * 0.85 * e;
+  p.armR.rotation.z = -0.4 - Math.sin(t * 4.6 + p.phase + 0.75) * 0.85 * e;
+  p.armL.rotation.x = -0.15 + s2 * 0.2 * e;
+  p.armR.rotation.x = -0.15 - s2 * 0.2 * e;
+  p.legL.rotation.x = s * 0.5 * e;
+  p.legR.rotation.x = -s * 0.5 * e;
+  p.head.rotation.z = Math.sin(t * 2.2 + p.phase) * 0.1 * e;
+  p.head.rotation.x = 0;
+  p.root.rotation.y = p.baseRot + Math.sin(t * 0.85 + p.phase) * 0.28 * e;
+}
+
+function updateHeroine(t) {
+  if (t < 5.0) { heroine.root.visible = false; return; }
+  heroine.root.visible = true;
+  const k = smooth(5.0, 6.15, t);
+  heroine.root.position.lerpVectors(HERO_START, HERO_HOME, k);
+  if (k < 1) { walk(heroine, t, 0.9); heroine.root.rotation.y = 2.1; return; }
+  const ex = smooth(31, 35, t) * (1 - smooth(45, 49, t));
+  const e = (t < 17.4 ? 0.55 : 1.0) * (1 - 0.28 * ex);
+  heroine.root.position.copy(HERO_HOME);
+  heroine.root.rotation.y = Math.sin(t * 0.55) * 0.7 + Math.sin(t * 0.21) * 0.22;
+  heroine.body.position.y = Math.abs(Math.sin(t * 2.4)) * 0.06 * e;
+  heroine.body.rotation.z = Math.sin(t * 1.7) * 0.07;
+  heroine.armL.rotation.z = lerp(1.15 + Math.sin(t * 2.4) * 0.55 * e, 0.25, ex);
+  heroine.armR.rotation.z = lerp(-1.15 - Math.sin(t * 2.4 + 0.6) * 0.55 * e, -0.25, ex);
+  heroine.armL.rotation.x = -0.2 + Math.sin(t * 2.4) * 0.2 * e;
+  heroine.armR.rotation.x = -0.2 - Math.sin(t * 2.4) * 0.2 * e;
+  heroine.legL.rotation.x = Math.sin(t * 2.4) * 0.35 * e;
+  heroine.legR.rotation.x = -Math.sin(t * 2.4) * 0.35 * e;
+  heroine.head.rotation.z = Math.sin(t * 1.9) * 0.1;
+  heroine.head.rotation.x = ex * 0.38;
+}
+
+function updateHeroMan(t) {
+  if (t < 18.1) { heroMan.root.visible = false; return; }
+  heroMan.root.visible = true;
+  const k = smooth(18.1, 19.4, t);
+  heroMan.root.position.lerpVectors(MAN_START, MAN_HOME, k);
+  if (k < 1) { walk(heroMan, t, 1.0); heroMan.root.rotation.y = -2.0; return; }
+  const ex = smooth(31, 35, t) * (1 - smooth(45, 49, t));
+  const e = 0.92 * (1 - 0.4 * ex);
+  heroMan.root.position.set(1.15 + Math.sin(t * 0.8) * 0.38, 0, 0.25 + Math.cos(t * 0.8) * 0.28);
+  heroMan.root.rotation.y = -0.55 + Math.sin(t * 0.8) * 0.45;
+  heroMan.body.position.y = Math.abs(Math.sin(t * 2.2 + 0.8)) * 0.05 * e;
+  heroMan.body.rotation.z = Math.sin(t * 1.3) * 0.06;
+  heroMan.armL.rotation.z = 0.5 + Math.sin(t * 2.2) * 0.6 * e;
+  heroMan.armR.rotation.z = -0.5 - Math.sin(t * 2.2 + 0.7) * 0.6 * e;
+  heroMan.armL.rotation.x = -0.15 + Math.sin(t * 2.2 + 0.4) * 0.2;
+  heroMan.armR.rotation.x = -0.15 - Math.sin(t * 2.2 + 0.4) * 0.2;
+  heroMan.legL.rotation.x = Math.sin(t * 2.2) * 0.4 * e;
+  heroMan.legR.rotation.x = -Math.sin(t * 2.2) * 0.4 * e;
+  heroMan.head.rotation.x = ex * 0.35;
+  heroMan.head.rotation.z = Math.sin(t * 1.6) * 0.08;
+}
+
+function energy(t) {
+  if (t < 6.3) return 0.12;
+  if (t < 17.4) return 0.32;
+  if (t < 29.6) return 0.85;
+  if (t < 42.5) return 1.05;
+  if (t < 54.8) return 0.88;
+  return 0.62;
+}
+
+function updateCrowd(p, t) {
+  if (p.join > 0 && t < p.join) { p.visible = false; return; }
+  p.visible = true;
+  const k = p.join > 0 ? smooth(p.join, p.join + 1.15, t) : 1;
+  if (p.join > 0) p.root.position.lerpVectors(p.spawn, p.home, k);
+  else p.root.position.copy(p.home);
+
+  if (p.role === 'villager' && t < 6.3) {
+    p.root.position.x = p.home.x + Math.sin(t * 0.38 + p.phase) * 0.55;
+    walk(p, t, 0.55);
+    p.root.rotation.y = p.baseRot + Math.sin(t * 0.35 + p.phase) * 0.4;
+    return;
+  }
+  if (p.join > 0 && t < p.join + 1.15) {
+    walk(p, t, 1.1);
+    p.root.rotation.y = Math.atan2(p.home.x - p.spawn.x, p.home.z - p.spawn.z);
+    return;
+  }
+  if (t < 17.4) {
+    p.root.position.copy(p.home);
+    idle(p, t);
+    p.root.rotation.y = p.face;
+    return;
+  }
+  p.root.position.copy(p.home);
+  const ex = smooth(32, 36, t) * (1 - smooth(46, 50, t));
+  const e = energy(t) * p.energy * (1 - (p.tired ? 0.4 : 0.18) * ex);
+  dance(p, t, e);
+  if (p.tired && ex > 0.3) p.head.rotation.x = ex * 0.4;
+}
+
+function updateMusician(p, t) {
+  const type = p.type;
+  p.body.position.y = Math.abs(Math.sin(t * (type === 'drum' ? 3.8 : 2.2) + 0.5)) * 0.03;
+  if (type === 'lute') {
+    p.armL.rotation.z = 0.9 + Math.sin(t * 5.2) * 0.28;
+    p.armR.rotation.z = -0.7 + Math.sin(t * 1.2) * 0.12;
+    p.head.rotation.z = Math.sin(t * 1.2) * 0.1;
+  } else {
+    p.armL.rotation.z = 0.6 + Math.sin(t * 6.4) * 0.45;
+    p.armR.rotation.z = -0.6 - Math.sin(t * 6.4 + 0.5) * 0.45;
+    p.head.rotation.z = Math.sin(t * 3.2) * 0.14;
+  }
+}
+
+// ------------------------------------------------------------ overlays
+const capEl = document.getElementById('cap'), tagEl = document.getElementById('tag');
+const titleEl = document.getElementById('title'), fadeEl = document.getElementById('fade');
+let lastCap = -1;
+
+function updateOverlay(t) {
+  let idx = -1;
+  for (let i = 0; i < CAPS.length; i++) if (t >= CAPS[i].t0 && t < CAPS[i].t1) idx = i;
+  if (idx !== lastCap) {
+    capEl.innerHTML = idx >= 0 ? CAPS[idx].text : '';
+    if (idx >= 0) {
+      const len = CAPS[idx].text.replace(/<br>/g, '').length;
+      capEl.style.fontSize = CAPS[idx].size || (len > 44 ? '42px' : len > 34 ? '44px' : '48px');
+    }
+    lastCap = idx;
+  }
+  if (idx >= 0) {
+    const c = CAPS[idx];
+    const a = smooth(c.t0 - 0.08, c.t0 + 0.12, t) * (1 - smooth(c.t1 - 0.12, c.t1 + 0.04, t));
+    capEl.style.opacity = a.toFixed(3);
+    capEl.style.visibility = a > 0.01 ? 'visible' : 'hidden';
+  } else {
+    capEl.style.opacity = '0'; capEl.style.visibility = 'hidden';
+  }
+
+  const tagA = smooth(0.35, 0.8, t) * (1 - smooth(5.2, 5.8, t));
+  tagEl.style.opacity = tagA.toFixed(3);
+
+  const black = smooth(66.8, 67.7, t);
+  fadeEl.style.opacity = black.toFixed(3);
+  const tin = smooth(67.7, 68.6, t);
+  titleEl.style.opacity = tin.toFixed(3);
+  titleEl.style.visibility = tin > 0.01 ? 'visible' : 'hidden';
+  titleEl.style.transform = `translateY(${(1 - tin) * 26}px)`;
+}
+
+// ------------------------------------------------------------ main render
+const camPos = new THREE.Vector3(), camA = new THREE.Vector3(), camB = new THREE.Vector3(), look = new THREE.Vector3();
+function updateCamera(t) {
+  let s = SHOTS[0];
+  for (const q of SHOTS) if (t >= q.t0 && t < q.t1) { s = q; break; }
+  const k = smooth(s.t0, s.t1, t);
+  camA.set(s.p0[0], s.p0[1], s.p0[2]); camB.set(s.p1[0], s.p1[1], s.p1[2]);
+  camPos.lerpVectors(camA, camB, k);
+  const shk = s.shake || 0;
+  camPos.x += (Math.sin(t * 13.7) + Math.sin(t * 7.3) * 0.6) * 0.013 * shk;
+  camPos.y += (Math.sin(t * 11.1) + Math.sin(t * 5.9) * 0.5) * 0.011 * shk;
+  camera.position.copy(camPos);
+  look.set(lerp(s.look0[0], s.look1[0], k), lerp(s.look0[1], s.look1[1], k), lerp(s.look0[2], s.look1[2], k));
+  look.x += Math.sin(t * 9.1) * 0.012 * shk;
+  camera.lookAt(look);
+  camera.fov = lerp(s.fov0, s.fov1, k);
+  camera.updateProjectionMatrix();
+}
+
+function renderAt(t) {
+  updateCamera(t);
+
+  heroine.phase = 0.4;
+  updateHeroine(t);
+  updateHeroMan(t);
+  for (let i = 0; i < crowd.length; i++) {
+    const p = crowd[i];
+    updateCrowd(p, t);
+    p.root.updateMatrixWorld(true);
+    writeCrowd(i, p);
+  }
+  for (const mesh of CROWD_MESHES) mesh.instanceMatrix.needsUpdate = true;
+
+  const stageOn = t >= 41.8;
+  stage.visible = stageOn; officials.visible = stageOn;
+  if (stageOn) for (const m of musicians) updateMusician(m, t);
+
+  const lit = smooth(41.2, 43.4, t);
+  key.intensity = 1.05 + lit * 0.22;
+  fill.intensity = 0.38 + lit * 0.10;
+  for (const tr of torches) {
+    tr.flame.visible = lit > 0.02;
+    tr.flame.scale.setScalar(0.8 + 0.25 * Math.sin(t * 9 + tr.phase));
+  }
+
+  for (let i = 0; i < motes.length; i++) {
+    const m = motes[i];
+    motePos[i * 3] = m.x0 + Math.sin(t * 0.25 + m.ph) * 0.4;
+    motePos[i * 3 + 1] = 0.35 + ((m.y0 + t * m.sp) % 5.2);
+    motePos[i * 3 + 2] = m.z0 + Math.cos(t * 0.19 + m.ph) * 0.3;
+  }
+  moteGeo.attributes.position.needsUpdate = true;
+
+  updateOverlay(t);
+  renderer.render(scene, camera);
+}
+window.addEventListener('hf-seek', (e) => renderAt(e.detail.time));
+renderAt(window.__hfThreeTime || 0);
+</script>
+</div>
+</body></html>

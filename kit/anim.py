@@ -73,7 +73,7 @@ def prepare(template, spec, dur, work, three=False):
     if three:
         t = KIT / 'node_modules' / 'three'
         link(t / 'build' / 'three.module.js', work / 'vendor' / 'three' / 'three.module.js')
-        for rel in ['environments/RoomEnvironment.js']:
+        for rel in ['environments/RoomEnvironment.js', 'utils/BufferGeometryUtils.js']:
             link(t / 'examples' / 'jsm' / rel, work / 'vendor' / 'three' / 'addons' / rel)
 
 
