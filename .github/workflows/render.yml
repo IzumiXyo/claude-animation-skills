@@ -55,6 +55,7 @@ jobs:
         run: |
           cd kit
           npm install --no-audit --no-fund
+          npm install --no-audit --no-fund --no-save hyperframes@0.8.34
           mkdir -p vendor
           if [ ! -s vendor/gsap.min.js ]; then
             curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js -o vendor/gsap.min.js
@@ -90,9 +91,7 @@ jobs:
         run: |
           set -x
           node -v
-          npm -v
-          npx --yes hyperframes@0.8.34 --version; echo "version exit=$?"
-          npx --yes hyperframes@0.8.34 render --help; echo "help exit=$?"
+          node kit/node_modules/hyperframes/bin/hyperframes.mjs --version; echo "version exit=$?"
 
       - name: Render
         env:

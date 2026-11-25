@@ -78,7 +78,12 @@ def prepare(template, spec, dur, work, three=False):
 
 
 def hyperframes(*args):
-    return subprocess.run(['npx', '--yes', HYPERFRAMES, *map(str, args)], capture_output=True, text=True)
+    local = KIT / 'node_modules' / 'hyperframes' / 'bin' / 'hyperframes.mjs'
+    if local.exists():
+        cmd = ['node', str(local), *map(str, args)]
+    else:
+        cmd = ['npx', '--yes', HYPERFRAMES, *map(str, args)]
+    return subprocess.run(cmd, capture_output=True, text=True)
 
 
 def render(work, out):
