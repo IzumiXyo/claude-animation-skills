@@ -92,12 +92,6 @@ jobs:
           print(json.dumps(spec, ensure_ascii=False, indent=2))
           PY
 
-      - name: Debug HyperFrames
-        run: |
-          set -x
-          node -v
-          node kit/node_modules/hyperframes/bin/hyperframes.mjs --version; echo "version exit=$?"
-
       - name: Render
         env:
           SKILL: ${{ inputs.skill }}

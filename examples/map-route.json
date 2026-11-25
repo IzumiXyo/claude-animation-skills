@@ -1,0 +1,9 @@
+{
+  "destination": "Monas",
+  "minutes": 18,
+  "distance": 6.4,
+  "unit": "km",
+  "places": ["Tanah Abang", "Lapangan Banteng", "Pasar Baru", "Taman Suropati", "Ciliwung"],
+  "accent": "#2f7cf6",
+  "seed": 12
+}
