@@ -146,7 +146,7 @@ T.timber = tex(32, 32, (g) => {
 });
 T.roof = tex(32, 32, (g) => {
   noise(g, 0, 0, 32, 32, 0x9a4f38, .05);
-  for (let y = 0; y < 32; y += 4) { for (let x = 0; x < 32; x++) px(g, x, y, col(0x7a3828)); px(g, x, y + 1, col(0xb56446, .95)); }
+  for (let y = 0; y < 32; y += 4) for (let x = 0; x < 32; x++) { px(g, x, y, col(0x7a3828)); px(g, x, y + 1, col(0xb56446, .95)); }
   for (let k = 0; k < 10; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0x6a3326), 1 + (rnd() * 3 | 0), 1);
 });
 T.skyDay = tex(8, 64, (g) => { for (let y = 0; y < 64; y++) { const u = y / 63; const c = u < .55 ? mixHex(0x5c97c4, 0xa9cfdf, u / .55) : mixHex(0xa9cfdf, 0xf4e3b4, (u - .55) / .45); for (let x = 0; x < 8; x++) px(g, x, y, c); } });
