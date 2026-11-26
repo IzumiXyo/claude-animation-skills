@@ -1128,6 +1128,26 @@ function updateCamera(t) {
   camera.updateProjectionMatrix();
 }
 
+const dbgEl = document.createElement('div');
+dbgEl.style.cssText = 'position:absolute;z-index:9998;left:0;top:0;width:1080px;padding:16px;background:rgba(0,0,0,.55);color:#7fff7f;font:700 22px/1.25 monospace;white-space:pre';
+document.getElementById('root').appendChild(dbgEl);
+const DBG_V = new THREE.Vector3();
+function dbgProj(label, x, y, z) {
+  DBG_V.set(x, y, z).project(camera);
+  return `${label} ndc=${DBG_V.x.toFixed(2)},${DBG_V.y.toFixed(2)} px=${((DBG_V.x * 0.5 + 0.5) * 1080) | 0},${((-DBG_V.y * 0.5 + 0.5) * 1920) | 0}`;
+}
+function updateDbg(t) {
+  const r = camera.rotation;
+  const gb = new THREE.Box3().setFromObject(ground);
+  dbgEl.textContent = `t=${t.toFixed(2)} cam=${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)} rot=${(r.x * 57.3).toFixed(1)},${(r.y * 57.3).toFixed(1)},${(r.z * 57.3).toFixed(1)} fov=${camera.fov.toFixed(1)}\n` +
+    `fog=${scene.fog.near},${scene.fog.far} ground=${gb.min.x.toFixed(0)},${gb.min.z.toFixed(0)}..${gb.max.x.toFixed(0)},${gb.max.z.toFixed(0)}\n` +
+    dbgProj('house', -14, 1.6, -18) + '\n' +
+    dbgProj('fence', 0, 0.5, -5) + '\n' +
+    dbgProj('hero', hero.root.position.x, 1.0, hero.root.position.z) + ` vis=${hero.root.visible}\n` +
+    dbgProj('emu0', flock[0].root.position.x, 1.0, flock[0].root.position.z) + '\n' +
+    dbgProj('wheat0', wheatData[0].x, 0.4, wheatData[0].z);
+}
+
 function renderAt(t) {
   let stage = 'camera';
   try {
@@ -1146,6 +1166,7 @@ function renderAt(t) {
     windFan.rotation.z = t * 1.35;
     stage = 'overlay'; updateOverlay(t);
     stage = 'draw'; renderer.render(scene, camera);
+    stage = 'debug'; updateDbg(t);
   } catch (e) {
     __showErr('renderAt t=' + t + ' stage=' + stage + '\n' + (e && e.stack ? e.stack : e));
     throw e;
