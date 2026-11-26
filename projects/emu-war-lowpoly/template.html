@@ -123,13 +123,13 @@ const mixHex = (a, b, k) => {
 };
 
 const T = {};
-T.ground = tex(32, 32, (g) => {
-  noise(g, 0, 0, 32, 32, 0xc39a4b, .07);
-  for (let k = 0; k < 150; k++) {
-    const x = rnd() * 32 | 0, y = rnd() * 32 | 0, h = 2 + (rnd() * 4 | 0);
-    px(g, x, y, col(rnd() < .5 ? 0xddb761 : 0xa87c34, .9 + rnd() * .2), 1, h);
+T.ground = tex(64, 64, (g) => {
+  noise(g, 0, 0, 64, 64, 0xc9a052, .05);
+  for (let k = 0; k < 760; k++) {
+    const x = rnd() * 64 | 0, y = rnd() * 64 | 0, h = 1 + (rnd() * 4 | 0);
+    px(g, x, y, col(rnd() < .5 ? 0xe6c470 : 0xa87c34, .9 + rnd() * .2), 1, h);
   }
-  for (let k = 0; k < 8; k++) px(g, rnd() * 30 | 0, rnd() * 30 | 0, col(0x8f6a2c), 2, 1);
+  for (let k = 0; k < 28; k++) px(g, rnd() * 62 | 0, rnd() * 62 | 0, col(0x8f6a2c), 2 + (rnd() * 2 | 0), 1);
 });
 T.dirt = tex(32, 32, (g) => {
   noise(g, 0, 0, 32, 32, 0x9a7a52, .09);
@@ -155,7 +155,7 @@ T.skyDusk = tex(8, 64, (g) => { for (let y = 0; y < 64; y++) { const u = y / 63;
 T.skySunset = tex(8, 64, (g) => { for (let y = 0; y < 64; y++) { const u = y / 63; const c = u < .55 ? mixHex(0x2e2a55, 0x8a4a6a, u / .55) : mixHex(0x8a4a6a, 0xff8a4a, (u - .55) / .45); for (let x = 0; x < 8; x++) px(g, x, y, c); } });
 T.dust = tex(8, 8, (g) => { for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) { const d = Math.hypot(x - 3.5, y - 3.5); if (d < 3.4 && rnd() > d / 4.6) px(g, x, y, `rgba(232,204,150,${(.55 + rnd() * .4).toFixed(2)})`); } });
 for (const t of [T.skyDay, T.skyGold, T.skyDusk, T.skySunset]) { t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; }
-T.ground.repeat.set(82, 82);
+T.ground.repeat.set(120, 120);
 T.dirt.repeat.set(22, 2);
 T.plaster.repeat.set(1, 1);
 T.timber.repeat.set(1, 1);
@@ -237,8 +237,8 @@ function bake(root) {
 const skyMats = [];
 [T.skyDay, T.skyGold, T.skyDusk, T.skySunset].forEach((tx, i) => {
   const m = new THREE.MeshBasicMaterial({ map: tx, transparent: true, opacity: i === 0 ? 1 : 0, depthWrite: false, depthTest: true, fog: false, side: THREE.DoubleSide });
-  const p = new THREE.Mesh(new THREE.PlaneGeometry(430, 240), m);
-  p.position.set(0, 46, -134); p.renderOrder = -40 + i; scene.add(p); skyMats.push(m);
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(2400, 700), m);
+  p.position.set(0, 134, -180); p.renderOrder = -40 + i; scene.add(p); skyMats.push(m);
 });
 const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff2c0, fog: false });
 const sun = new THREE.Mesh(new THREE.CircleGeometry(8, 12), sunMat);
@@ -246,9 +246,9 @@ sun.position.set(-24, 26, -126); sun.renderOrder = -35; scene.add(sun);
 
 const hillMats = [];
 function ridge(z, color, h, ph, order) {
-  const pts = [new THREE.Vector2(-180, -2)];
-  for (let x = -180; x <= 180; x += 15) pts.push(new THREE.Vector2(x, h * (0.3 + 0.7 * Math.abs(Math.sin(x * 0.045 + ph)))));
-  pts.push(new THREE.Vector2(180, -2));
+  const pts = [new THREE.Vector2(-600, -2)];
+  for (let x = -600; x <= 600; x += 20) pts.push(new THREE.Vector2(x, h * (0.3 + 0.7 * Math.abs(Math.sin(x * 0.045 + ph)))));
+  pts.push(new THREE.Vector2(600, -2));
   const m = new THREE.MeshBasicMaterial({ color, fog: false });
   const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts)), m);
   mesh.position.set(0, 0, z); mesh.renderOrder = order; scene.add(mesh); hillMats.push(m);
@@ -367,26 +367,25 @@ bake(world);
 // ------------------------------------------------------------ wheat
 const bladeGeos = [];
 for (let k = 0; k < 5; k++) {
-  const h = 0.46 + rnd() * 0.22;
-  const g = new THREE.ConeGeometry(0.032, h, 3);
-  g.translate((rnd() - .5) * .14, h / 2, (rnd() - .5) * .14);
+  const h = 0.52 + rnd() * 0.3;
+  const g = new THREE.ConeGeometry(0.046, h, 3);
+  g.translate((rnd() - .5) * .18, h / 2, (rnd() - .5) * .18);
   g.rotateZ((rnd() - .5) * .38); g.rotateX((rnd() - .5) * .32);
   bladeGeos.push(g.toNonIndexed());
 }
 const tuftGeo = mergeGeometries(bladeGeos, false);
-const WHEAT_N = 1500;
+const WHEAT_N = 3200;
 const wheatMat = ps1(new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }));
 const wheat = new THREE.InstancedMesh(tuftGeo, wheatMat, WHEAT_N);
 wheat.instanceMatrix.setUsage(THREE.DynamicDrawUsage); wheat.frustumCulled = false; scene.add(wheat);
 const wheatData = [];
-const wheatCols = [0xd9b45e, 0xe6c878, 0xc9a24e, 0xefd48c, 0xb8923e];
+const wheatCols = [0xe8c060, 0xf2d27a, 0xd9ae4e, 0xf7df9a, 0xc79a3e];
 for (let i = 0; i < WHEAT_N; i++) {
-  let x = -38 + rnd() * 76, z = -32 + rnd() * 42;
-  if (Math.abs(z - 9) < 3.4) z += 7;
+  let x = -34 + rnd() * 68, z = -34 + rnd() * 38;
+  if (x > -3 && x < 16 && z > 3.2 && z < 12.5) z -= 9;
   if (x > -20 && x < -8 && z < -13) x -= 10;
-  if (x > 2 && x < 18 && z > 3 && z < 11) z -= 8;
-  if (Math.hypot(x - 2, z - 2) < 2.0) x += 4;
-  wheatData.push({ x, z, ry: rnd() * TAU, tilt: (rnd() - .5) * .22, ph: rnd() * TAU, s: 0.8 + rnd() * 0.55 });
+  if (Math.hypot(x - 2, z - 2) < 2.2) x += 4;
+  wheatData.push({ x, z, ry: rnd() * TAU, tilt: (rnd() - .5) * .22, ph: rnd() * TAU, s: 1.0 + rnd() * 0.6 });
   wheat.setColorAt(i, new THREE.Color(wheatCols[i % wheatCols.length]));
 }
 if (wheat.instanceColor) wheat.instanceColor.needsUpdate = true;
@@ -447,24 +446,24 @@ function makeEmuRig() {
 const flock = [];
 for (let i = 0; i < EMU_N; i++) {
   let x, z;
-  if (i < 9) { x = -6 + rnd() * 10; z = 0.8 + rnd() * 3.2; }
-  else { x = -23 + rnd() * 46; z = -18 + rnd() * 20; }
-  if (x > 2 && z > 3.5) z -= 7;
+  if (i < 8) { x = -7 + rnd() * 11; z = 0.4 + rnd() * 3.0; }
+  else { x = -30 + rnd() * 60; z = -26 + rnd() * 28; }
+  if (x > -2 && x < 16 && z > -1) z -= 12;
   if (x > -20 && x < -8 && z < -13) x += 10;
-  if (Math.hypot(x - 2, z - 2) < 2.4) x += 4.5;
+  if (Math.hypot(x - 2, z - 2) < 2.6) x += 5;
   const p = makeEmuRig();
   p.home.set(x, 0, z); p.root.position.copy(p.home);
   p.face = rnd() * TAU; p.root.rotation.y = p.face;
   p.root.scale.setScalar(0.82 + rnd() * 0.24);
-  const bodyC = new THREE.Color(0x6f6048).offsetHSL(0, 0, (rnd() - .5) * .06);
+  const bodyC = new THREE.Color(0x8b7a5e).offsetHSL(0, 0, (rnd() - .5) * .08);
   EM.body.setColorAt(i, bodyC);
-  EM.neck1.setColorAt(i, new THREE.Color(0x5f513d));
-  EM.neck2.setColorAt(i, new THREE.Color(0x6a5b44));
-  EM.head.setColorAt(i, new THREE.Color(0x6a5b44));
-  EM.beak.setColorAt(i, new THREE.Color(0x2a241c));
-  EM.tail.setColorAt(i, new THREE.Color(0x5a4c39));
-  EM.legL.setColorAt(i, new THREE.Color(0x4a4034));
-  EM.legR.setColorAt(i, new THREE.Color(0x4a4034));
+  EM.neck1.setColorAt(i, new THREE.Color(0x9a8a6a));
+  EM.neck2.setColorAt(i, new THREE.Color(0xa08f70));
+  EM.head.setColorAt(i, new THREE.Color(0x9a8a6a));
+  EM.beak.setColorAt(i, new THREE.Color(0x3a3228));
+  EM.tail.setColorAt(i, new THREE.Color(0x7a6a50));
+  EM.legL.setColorAt(i, new THREE.Color(0x6a5a48));
+  EM.legR.setColorAt(i, new THREE.Color(0x6a5a48));
   flock.push(p);
 }
 for (const m of [EM.body, EM.neck1, EM.neck2, EM.head, EM.beak, EM.tail, EM.legL, EM.legR]) if (m.instanceColor) m.instanceColor.needsUpdate = true;
@@ -499,7 +498,19 @@ function poseEmu(p, t, mode) {
     p.tail.rotation.x = 0.45;
   }
 }
+const HIDE_FLOCK = [[3.30, 8.96], [56.00, 60.59], [68.18, 73.05]];
+let flockHidden = false;
 function updateFlock(t) {
+  const hide = HIDE_FLOCK.some(([a, b]) => t >= a && t < b);
+  if (hide) {
+    if (!flockHidden) {
+      for (const m of EMU_MESHES) for (let i = 0; i < EMU_N; i++) m.setMatrixAt(i, ZERO);
+      for (const m of EMU_MESHES) m.instanceMatrix.needsUpdate = true;
+      flockHidden = true;
+    }
+    return;
+  }
+  flockHidden = false;
   for (let i = 0; i < flock.length; i++) {
     const p = flock[i];
     let x = p.home.x, z = p.home.z, mode = 'idle';
@@ -542,7 +553,7 @@ function updateFlock(t) {
 function makeHeroEmu() {
   const root = new THREE.Group(); root.scale.setScalar(0.88);
   const body = new THREE.Group(); body.position.y = 1.15; root.add(body);
-  const bodyMat = lamC(0x6f6048), chestMat = lamC(0x7d6b50), darkMat = lamC(0x4a4034);
+  const bodyMat = lamC(0x8b7a5e), chestMat = lamC(0x9a8a6a), darkMat = lamC(0x6a5a48);
   const bm = new THREE.Mesh(new THREE.SphereGeometry(0.55, 6, 4), bodyMat);
   bm.scale.set(1.05, 0.95, 1.4); body.add(bm);
   const chest = new THREE.Mesh(new THREE.SphereGeometry(0.38, 6, 4), chestMat);
@@ -607,8 +618,8 @@ function heroPose(t, mode) {
 }
 function updateHero(t) {
   let on = false, x = 0, z = 0, ry = 0, mode = 'idle';
-  if (t >= 3.3 && t < 8.96) { on = true; x = 2; z = 2.0 + smooth(3.3, 8.9, t) * 0.25; ry = 0.12; mode = 'walk'; }
-  else if (t >= 56.0 && t < 60.59) { on = true; x = -1.4; z = 0.6; ry = 0.05; mode = 'idle'; }
+  if (t >= 3.3 && t < 8.96) { on = true; x = 2.2; z = 1.2 + smooth(3.3, 8.9, t) * 0.3; ry = -0.55; mode = 'walk'; }
+  else if (t >= 56.0 && t < 60.59) { on = true; x = -1.7; z = 1.0; ry = 0.7; mode = 'idle'; }
   else if (t >= 68.18) { on = true; x = 1.3; z = -2.2; ry = 1.25; mode = 'idle'; }
   hero.root.visible = on;
   if (!on) return;
@@ -790,24 +801,25 @@ const key = new THREE.DirectionalLight(0xffe0b0, 1.3); key.position.set(-14, 16,
 const fill = new THREE.DirectionalLight(0x7f9fc8, 0.35); fill.position.set(12, 8, -8); scene.add(fill);
 // ------------------------------------------------------------ camera shots
 const SHOTS = [
-  { t0: 0.00, t1: 3.30, p0: [11, 3.4, 20], p1: [8, 3.0, 17], look0: [0, 1.2, -8], look1: [0, 1.2, -7], fov0: 56, fov1: 54, shake: 0.15 },
-  { t0: 3.30, t1: 8.96, p0: [2.7, 1.55, 6.0], p1: [2.35, 1.45, 4.9], look0: [2, 1.35, 2.0], look1: [2, 1.3, 2.2], fov0: 42, fov1: 40, shake: 0.2 },
-  { t0: 8.96, t1: 13.50, p0: [-9, 4.3, 14.5], p1: [-5.5, 3.7, 11.5], look0: [0, 1.0, -10], look1: [0, 1.0, -9], fov0: 60, fov1: 57, shake: 0.3 },
+  { t0: 0.00, t1: 3.30, p0: [11, 3.4, 20], p1: [8, 3.0, 17], look0: [-2, 1.2, -8], look1: [-2, 1.2, -7], fov0: 56, fov1: 54, shake: 0.15 },
+  { t0: 3.30, t1: 8.96, p0: [5.4, 1.55, 5.8], p1: [5.0, 1.5, 5.2], look0: [2.2, 1.45, 1.2], look1: [2.2, 1.45, 1.4], fov0: 40, fov1: 38, shake: 0.2 },
+  { t0: 8.96, t1: 13.50, p0: [10.5, 3.0, 11.0], p1: [8.5, 2.6, 9.0], look0: [-2.5, 1.2, -6], look1: [-2.5, 1.2, -6], fov0: 56, fov1: 53, shake: 0.3 },
   { t0: 13.50, t1: 20.10, p0: [9.2, 2.25, 10.2], p1: [7.4, 2.05, 8.4], look0: [0, 1.1, -3.5], look1: [0, 1.1, -3.0], fov0: 50, fov1: 48, shake: 0.3 },
-  { t0: 20.10, t1: 26.10, p0: [0.6, 0.95, 8.0], p1: [0.2, 0.9, 6.6], look0: [0, 1.15, -2.5], look1: [0, 1.1, -2.0], fov0: 56, fov1: 54, shake: 0.35 },
-  { t0: 26.10, t1: 30.60, p0: [19, 2.7, 14.5], p1: [14.5, 2.3, 11.5], look0: [8, 1.0, 4], look1: [9, 1.0, 5], fov0: 52, fov1: 50, shake: 0.4 },
-  { t0: 30.60, t1: 33.40, p0: [7.9, 1.55, 11.1], p1: [7.1, 1.45, 10.2], look0: [6.4, 1.05, 7.0], look1: [6.3, 1.05, 6.8], fov0: 42, fov1: 40, shake: 0.25 },
-  { t0: 33.40, t1: 37.06, p0: [9.0, 2.0, 12.2], p1: [8.3, 1.9, 11.0], look0: [3.5, 1.4, 0], look1: [3.0, 1.35, -0.5], fov0: 46, fov1: 44, shake: 0.2 },
-  { t0: 37.06, t1: 40.40, p0: [-7.5, 5.0, 15.5], p1: [-5.0, 4.2, 12.5], look0: [2, 0.9, -4], look1: [2, 0.9, -3], fov0: 62, fov1: 58, shake: 0.8 },
-  { t0: 40.40, t1: 45.00, p0: [8.8, 1.75, 10.9], p1: [8.1, 1.6, 10.0], look0: [6.3, 1.05, 6.6], look1: [6.2, 1.05, 6.4], fov0: 40, fov1: 38, shake: 0.9 },
-  { t0: 45.00, t1: 48.20, p0: [7.6, 1.65, 10.8], p1: [7.0, 1.55, 10.1], look0: [6.3, 1.15, 6.7], look1: [6.2, 1.1, 6.6], fov0: 42, fov1: 40, shake: 0.5 },
-  { t0: 48.20, t1: 51.99, p0: [3.2, 1.3, 9.6], p1: [2.0, 1.15, 8.2], look0: [2.0, 1.05, 2.0], look1: [1.8, 1.0, 1.5], fov0: 52, fov1: 50, shake: 0.6 },
-  { t0: 51.99, t1: 56.00, p0: [-3.2, 2.9, 11.5], p1: [-2.2, 2.5, 9.8], look0: [5.0, 0.9, 4.0], look1: [4.8, 0.9, 3.6], fov0: 52, fov1: 50, shake: 0.15 },
-  { t0: 56.00, t1: 60.59, p0: [0.2, 1.45, 10.2], p1: [0.0, 1.35, 8.9], look0: [-0.6, 1.45, 0.5], look1: [-0.6, 1.4, 0.4], fov0: 46, fov1: 44, shake: 0.1 },
-  { t0: 60.59, t1: 64.50, p0: [12.4, 3.3, 13.4], p1: [10.2, 2.8, 11.2], look0: [9.5, 1.1, 6.5], look1: [9.5, 1.05, 6.3], fov0: 52, fov1: 50, shake: 0.2 },
-  { t0: 64.50, t1: 68.18, p0: [16.5, 2.5, 13.5], p1: [18.5, 2.3, 14.0], look0: [16.0, 1.0, 7.0], look1: [19.0, 1.0, 7.5], fov0: 54, fov1: 52, shake: 0.25 },
-  { t0: 68.18, t1: 73.05, p0: [3.2, 1.45, 7.0], p1: [2.5, 1.6, 5.2], look0: [1.3, 1.3, -2.0], look1: [1.3, 1.35, -2.2], fov0: 46, fov1: 44, shake: 0.08 },
-  { t0: 73.05, t1: 80.00, p0: [0.0, 4.6, 18.0], p1: [0.0, 5.8, 24.0], look0: [0, 1.2, -2.0], look1: [0, 1.1, -2.0], fov0: 52, fov1: 50, shake: 0.0 }
+  { t0: 20.10, t1: 24.20, p0: [3.2, 1.5, 7.8], p1: [2.7, 1.4, 7.0], look0: [-1.8, 1.15, -2.8], look1: [-2.0, 1.15, -3.1], fov0: 50, fov1: 48, shake: 0.35 },
+  { t0: 24.20, t1: 26.10, p0: [-0.2, 1.45, 2.2], p1: [-0.6, 1.4, 1.8], look0: [-3.4, 1.25, -3.9], look1: [-3.6, 1.25, -4.0], fov0: 44, fov1: 42, shake: 0.15 },
+  { t0: 26.10, t1: 30.60, p0: [3.0, 2.5, 14.0], p1: [3.4, 2.3, 13.2], look0: [32, 1.2, 7.5], look1: [13, 1.2, 7.5], fov0: 50, fov1: 50, shake: 0.4 },
+  { t0: 30.60, t1: 33.40, p0: [1.0, 1.7, 6.8], p1: [1.3, 1.65, 6.7], look0: [6.5, 1.2, 7.5], look1: [6.6, 1.2, 7.4], fov0: 46, fov1: 44, shake: 0.25 },
+  { t0: 33.40, t1: 37.06, p0: [1.6, 1.6, 4.2], p1: [1.9, 1.55, 4.4], look0: [6.6, 1.25, 7.2], look1: [6.6, 1.25, 7.2], fov0: 54, fov1: 52, shake: 0.2 },
+  { t0: 37.06, t1: 40.40, p0: [-6.5, 4.2, 14.0], p1: [-4.5, 3.6, 11.5], look0: [3, 1.0, -2], look1: [2.5, 1.0, -2], fov0: 60, fov1: 56, shake: 0.8 },
+  { t0: 40.40, t1: 45.00, p0: [0.6, 1.7, 5.0], p1: [0.9, 1.65, 5.3], look0: [6.5, 1.1, 6.7], look1: [6.5, 1.1, 6.7], fov0: 54, fov1: 52, shake: 0.9 },
+  { t0: 45.00, t1: 48.20, p0: [2.2, 1.6, 5.6], p1: [2.5, 1.55, 5.8], look0: [6.8, 1.15, 7.6], look1: [6.8, 1.15, 7.6], fov0: 50, fov1: 48, shake: 0.5 },
+  { t0: 48.20, t1: 51.99, p0: [2.6, 1.5, 5.2], p1: [1.8, 1.35, 4.0], look0: [1.2, 1.0, -2.0], look1: [1.0, 1.0, -2.5], fov0: 54, fov1: 52, shake: 0.8 },
+  { t0: 51.99, t1: 56.00, p0: [0.4, 2.7, 11.2], p1: [1.0, 2.5, 10.4], look0: [7.0, 0.8, 6.8], look1: [7.0, 0.8, 6.8], fov0: 56, fov1: 54, shake: 0.15 },
+  { t0: 56.00, t1: 60.59, p0: [0.8, 1.6, 7.8], p1: [0.6, 1.55, 7.4], look0: [-0.8, 1.5, 0.8], look1: [-0.8, 1.5, 0.8], fov0: 46, fov1: 44, shake: 0.1 },
+  { t0: 60.59, t1: 64.50, p0: [7.5, 3.0, 16.0], p1: [8.0, 2.8, 15.4], look0: [12.5, 1.4, 7.8], look1: [12.8, 1.4, 7.8], fov0: 52, fov1: 50, shake: 0.2 },
+  { t0: 64.50, t1: 68.18, p0: [4.0, 2.8, 14.5], p1: [5.0, 2.7, 15.0], look0: [13, 1.2, 7.5], look1: [44, 1.2, 7.5], fov0: 52, fov1: 50, shake: 0.25 },
+  { t0: 68.18, t1: 73.05, p0: [2.8, 1.5, 5.6], p1: [2.5, 1.55, 5.0], look0: [1.4, 1.9, -1.2], look1: [1.4, 1.95, -1.4], fov0: 44, fov1: 42, shake: 0.08 },
+  { t0: 73.05, t1: 80.00, p0: [0.0, 4.6, 18.0], p1: [0.0, 5.4, 23.0], look0: [-3.5, 1.6, -2.0], look1: [-4.5, 1.5, -2.0], fov0: 52, fov1: 50, shake: 0.0 }
 ];
 
 // ------------------------------------------------------------ captions
@@ -838,17 +850,23 @@ function updateFarmers(t) {
   }
 }
 function updateSoldiers(t) {
-  const on = t >= 27.1 && t < 64.5;
+  const on = t >= 29.55 && t < 64.5;
   for (const s of [gunner, loader, sarge]) s.root.visible = on;
   if (!on) { ammoBox.visible = false; return; }
   resetPerson(gunner); resetPerson(loader); resetPerson(sarge);
   ammoBox.visible = false;
   gunner.root.rotation.y = loader.root.rotation.y = sarge.root.rotation.y = Math.PI;
 
-  if (t < 30.6) {
-    gunner.root.position.copy(S_HOME.gunner); loader.root.position.copy(S_HOME.loader); sarge.root.position.copy(S_HOME.sarge);
-    idlePerson(gunner, t); idlePerson(loader, t + .9); idlePerson(sarge, t + 1.8);
-    sarge.armR.rotation.x = -0.9;
+  if (t < 30.9) {
+    const k = smooth(29.55, 30.9, t);
+    gunner.root.position.lerpVectors(S_TRUCK.gunner, S_HOME.gunner, k);
+    loader.root.position.lerpVectors(S_TRUCK.loader, S_HOME.loader, k);
+    sarge.root.position.lerpVectors(S_TRUCK.sarge, S_HOME.sarge, k);
+    const turn = smooth(30.2, 30.7, t);
+    for (const s of [gunner, loader, sarge]) s.root.rotation.y = lerp(-Math.PI / 2, Math.PI, turn);
+    if (k < 0.98) { walkPerson(gunner, t, .9); walkPerson(loader, t + .4, .9); walkPerson(sarge, t + .8, .9); }
+    else { idlePerson(gunner, t); idlePerson(loader, t + .9); idlePerson(sarge, t + 1.8); }
+    sarge.armR.rotation.x = -0.6;
   } else if (t < 37.06) {
     gunner.root.position.copy(S_HOME.gunner); loader.root.position.copy(S_HOME.loader); sarge.root.position.copy(S_HOME.sarge);
     if (t < 33.4) {
@@ -911,11 +929,11 @@ function updateSoldiers(t) {
 }
 // ------------------------------------------------------------ truck / gun / atmosphere
 function updateTruck(t) {
-  const on = t >= 25.9 && t < 68.25;
+  const on = t >= 25.9 && t < 68.18;
   truck.visible = on;
   if (!on) return;
   let x = 13, moving = false;
-  if (t < 30.6) { x = lerp(36, 13, smooth(26.0, 30.4, t)); moving = t > 26 && t < 30.5; }
+  if (t < 29.6) { x = lerp(32, 13, smooth(26.0, 29.6, t)); moving = t > 26 && t < 29.6; }
   else if (t > 64.5) { x = lerp(13, 44, smooth(64.5, 68.1, t)); moving = true; }
   truck.position.set(x, moving ? Math.sin(t * 22) * 0.018 : 0, 7.5);
   for (const w of wheels) w.rotation.z = -x / 0.52;
@@ -931,12 +949,20 @@ function setTracer(mesh, from, to) {
   mesh.quaternion.setFromUnitVectors(V_UP, TV3);
 }
 function updateGun(t) {
+  const gunOn = t >= 26.8 && t < 68.2;
+  gun.visible = gunOn;
+  panGround.visible = gunOn && t > 46.1;
+  if (!gunOn) {
+    flash.visible = false;
+    for (const m of tracers) m.visible = false;
+    for (const m of impacts) m.visible = false;
+    return;
+  }
   const firing = t >= 40.55 && t < 44.95;
   const burst = firing && (Math.floor((t - 40.55) * 6) % 2 === 0);
   flash.visible = burst;
   gunBody.position.z = burst ? 0.055 : 0;
   gun.rotation.y = Math.PI + Math.sin(t * 0.6) * 0.05;
-  panGround.visible = t > 46.1;
   panGround.rotation.y = t * 1.6;
   if (burst) {
     gun.updateMatrixWorld(true);
