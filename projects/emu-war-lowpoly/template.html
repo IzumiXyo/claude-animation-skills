@@ -236,11 +236,11 @@ function bake(root) {
 // ------------------------------------------------------------ sky, sun, hills, clouds, birds
 const skyMats = [];
 [T.skyDay, T.skyGold, T.skyDusk, T.skySunset].forEach((tx, i) => {
-  const m = new THREE.MeshBasicMaterial({ map: tx, transparent: true, opacity: i === 0 ? 1 : 0, depthWrite: false, depthTest: false, fog: false });
+  const m = new THREE.MeshBasicMaterial({ map: tx, transparent: true, opacity: i === 0 ? 1 : 0, depthWrite: false, depthTest: true, fog: false, side: THREE.DoubleSide });
   const p = new THREE.Mesh(new THREE.PlaneGeometry(430, 240), m);
   p.position.set(0, 46, -134); p.renderOrder = -40 + i; scene.add(p); skyMats.push(m);
 });
-const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff2c0, fog: false, depthWrite: false, depthTest: false });
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff2c0, fog: false });
 const sun = new THREE.Mesh(new THREE.CircleGeometry(8, 12), sunMat);
 sun.position.set(-24, 26, -126); sun.renderOrder = -35; scene.add(sun);
 
@@ -249,7 +249,7 @@ function ridge(z, color, h, ph, order) {
   const pts = [new THREE.Vector2(-180, -2)];
   for (let x = -180; x <= 180; x += 15) pts.push(new THREE.Vector2(x, h * (0.3 + 0.7 * Math.abs(Math.sin(x * 0.045 + ph)))));
   pts.push(new THREE.Vector2(180, -2));
-  const m = new THREE.MeshBasicMaterial({ color, fog: false, depthWrite: false });
+  const m = new THREE.MeshBasicMaterial({ color, fog: false });
   const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts)), m);
   mesh.position.set(0, 0, z); mesh.renderOrder = order; scene.add(mesh); hillMats.push(m);
 }
