@@ -9,24 +9,25 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#1c1f24}
 #root{position:relative;width:1080px;height:1920px;overflow:hidden;background:#2f343c;font-family:'Inter',sans-serif}
 #c{position:absolute;left:0;top:0;width:1080px;height:1920px;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 #vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 44%,rgba(0,0,0,0) 40%,rgba(0,0,0,.5) 100%)}
+#shade{position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(180deg,rgba(18,10,20,.66) 0%,rgba(18,10,20,.38) 34%,rgba(18,10,20,0) 64%)}
 #fade{position:absolute;inset:0;background:#000;opacity:1;pointer-events:none}
-#cap{position:absolute;left:80px;width:920px;top:1228px;text-align:center;font:700 48px/1.12 'Inter';color:#ffe23a;letter-spacing:.012em;
+#cap{position:absolute;left:80px;width:920px;top:1400px;text-align:center;font:700 48px/1.12 'Inter';color:#ffe23a;letter-spacing:.012em;
   visibility:hidden;opacity:0;
   text-shadow:-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,3px 3px 0 #000,0 -3px 0 #000,0 3px 0 #000,-3px 0 0 #000,3px 0 0 #000,0 5px 0 #000}
 #tag{position:absolute;left:64px;top:250px;font:700 25px 'Inter';letter-spacing:.28em;color:#e9d7a6;opacity:0;
   text-shadow:0 3px 0 #000,-2px 0 0 #000,2px 0 0 #000}
 #tag:after{content:'';display:block;width:92px;height:2px;background:#c8a35a;margin-top:14px}
-#stat{position:absolute;left:80px;top:410px;width:920px;text-align:center;opacity:0;visibility:hidden}
+#stat{position:absolute;left:80px;top:330px;width:920px;text-align:center;opacity:0;visibility:hidden}
 #stat .kick{font:700 27px 'Inter';letter-spacing:.36em;color:#e9d7a6;margin-bottom:20px;text-shadow:0 3px 0 #000}
 #stat .num{font:800 196px/.88 'InterTight';color:#ffe23a;letter-spacing:-.02em;
   text-shadow:0 8px 0 #000,-5px -5px 0 #000,5px -5px 0 #000,-5px 5px 0 #000,5px 5px 0 #000}
 #stat .lbl{font:700 46px 'Inter';letter-spacing:.26em;color:#f4eddc;margin-top:18px;
   text-shadow:0 4px 0 #000,-3px 0 0 #000,3px 0 0 #000}
-#title{position:absolute;left:80px;top:500px;width:920px;text-align:center;opacity:0;visibility:hidden}
+#title{position:absolute;left:80px;top:400px;width:920px;text-align:center;opacity:0;visibility:hidden}
 #title .kick{font:700 27px 'Inter';letter-spacing:.38em;color:#d8b36a;margin-bottom:30px;text-shadow:0 3px 0 #000;opacity:0}
 #title h1{font:800 108px/.94 'InterTight';color:#f4eddc;letter-spacing:-.01em;text-shadow:0 7px 0 #000;opacity:0}
 #title .rule{width:150px;height:2px;background:#c8a35a;margin:34px auto;opacity:0}
-#title p{font:500 36px/1.3 'Poppins';color:#e4cf9e;text-shadow:0 4px 0 #000;opacity:0}
+#title p{font:500 38px/1.3 'Poppins';color:#f0dfb4;text-shadow:0 4px 0 #000,-2px 0 0 #000,2px 0 0 #000,0 0 22px rgba(0,0,0,.65);opacity:0}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 </head>
@@ -34,7 +35,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#1c1f24}
 <div id="root" data-composition-id="main" data-start="0" data-duration="__DURATION__" data-fps="24" data-width="1080" data-height="1920">
 <canvas id="c" width="360" height="640"></canvas>
 <div id="vignette"></div>
-<div id="fade"></div>
+<div id="shade"></div>
 <div id="tag">AUSTRALIA · 1932</div>
 <div id="stat">
   <div class="kick" id="statKick">OPERATION 1</div>
@@ -48,6 +49,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#1c1f24}
   <p id="titleP">30 emus. 10.000 peluru.</p>
 </div>
 <div id="cap"></div>
+<div id="fade"></div>
 </div>
 <script type="module">
 import * as THREE from "three";
@@ -106,19 +108,25 @@ const mixHex = (a, b, k) => { const A = rgbOf(a), B = rgbOf(b); return (Math.rou
 const css = (h) => `rgb(${(h >> 16) & 255},${(h >> 8) & 255},${h & 255})`;
 
 const T = {};
-T.ground = tex(32, 32, (g) => {
-  noise(g, 0, 0, 32, 32, 0xc9a24e, .07);
-  for (let k = 0; k < 80; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0xe2c274), 1, 2);
-  for (let k = 0; k < 45; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0x9c7838), 1, 2);
-  for (let y = 0; y < 32; y += 8) px(g, 0, y, col(0xb08a42, .9), 32, 1);
+T.ground = tex(64, 64, (g) => {
+  noise(g, 0, 0, 64, 64, 0xcaa452, .06);
+  for (let k = 0; k < 170; k++) px(g, rnd() * 64 | 0, rnd() * 64 | 0, col(0xe4c678, .94 + rnd() * .12), 1 + (rnd() * 2 | 0), 1);
+  for (let k = 0; k < 120; k++) px(g, rnd() * 64 | 0, rnd() * 64 | 0, col(0xa07c3c, .92 + rnd() * .16), 1, 1 + (rnd() * 2 | 0));
+  for (let k = 0; k < 26; k++) {
+    const bx = rnd() * 60 | 0, by = rnd() * 60 | 0, bw = 2 + (rnd() * 5 | 0), bh = 2 + (rnd() * 4 | 0);
+    for (let y = by; y < by + bh; y++) for (let x = bx; x < bx + bw; x++) px(g, x, y, col(0xb58c46, .9 + rnd() * .2));
+  }
 });
-T.ground.repeat.set(42, 42);
+T.ground.repeat.set(26, 26);
 T.dirt = tex(32, 32, (g) => {
   noise(g, 0, 0, 32, 32, 0x8a6a48, .08);
   for (let k = 0; k < 50; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0x6b4f34, .9 + rnd() * .2), 1 + (rnd() * 3 | 0), 1);
   for (let k = 0; k < 22; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0xa8875e), 1, 1);
 });
 T.dirt.repeat.set(22, 2);
+T.dirtPatch = T.dirt.clone();
+T.dirtPatch.needsUpdate = true;
+T.dirtPatch.repeat.set(3, 3);
 T.plaster = tex(32, 32, (g) => {
   noise(g, 0, 0, 32, 32, 0xe0cda8, .04);
   for (let k = 0; k < 14; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0xc8b28a), 1 + (rnd() * 2 | 0), 1);
@@ -163,6 +171,7 @@ const L = (o) => lam(o), B = (o) => basic(o);
 const MAT = {
   ground: L({ map: T.ground }),
   dirt: L({ map: T.dirt }),
+  dirtPatch: L({ map: T.dirtPatch }),
   plaster: L({ map: T.plaster }),
   timber: L({ map: T.timber }),
   roof: L({ map: T.roof, side: THREE.DoubleSide }),
@@ -278,11 +287,11 @@ const staticRoot = new THREE.Group(); scene.add(staticRoot);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(220, 220), MAT.ground);
 ground.rotation.x = -Math.PI / 2; staticRoot.add(ground);
 
-const road = new THREE.Mesh(new THREE.PlaneGeometry(92, 7), MAT.dirt);
-road.rotation.x = -Math.PI / 2; road.position.set(0, 0.02, 9); staticRoot.add(road);
+const track = new THREE.Mesh(new THREE.PlaneGeometry(90, 3.4), MAT.dirt);
+track.rotation.x = -Math.PI / 2; track.position.set(0, 0.02, 9.2); staticRoot.add(track);
 
-const path = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 23), MAT.dirt);
-path.rotation.x = -Math.PI / 2; path.position.set(-11, 0.025, -2.5); staticRoot.add(path);
+const clearing = new THREE.Mesh(new THREE.PlaneGeometry(10, 7.5), MAT.dirtPatch);
+clearing.rotation.x = -Math.PI / 2; clearing.position.set(0, 0.03, 4.8); staticRoot.add(clearing);
 
 // fence line, with a gate by the path and a broken stretch where the emus came through
 for (let x = -33; x <= 33; x += 3) {
@@ -375,7 +384,7 @@ for (let k = 0; k < 5; k++) {
   bladeGeos.push(g);
 }
 const tuftGeo = mergeGeometries(bladeGeos, false);
-const WHEAT_N = 1500;
+const WHEAT_N = 3400;
 const wheatMat = ps1(new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }));
 const wheat = new THREE.InstancedMesh(tuftGeo, wheatMat, WHEAT_N);
 wheat.instanceMatrix.setUsage(THREE.DynamicDrawUsage); wheat.frustumCulled = false; scene.add(wheat);
@@ -384,15 +393,14 @@ const wc = new THREE.Color();
 for (let i = 0; i < WHEAT_N; i++) {
   let x = 0, z = 0, ok = false;
   for (let tries = 0; tries < 30 && !ok; tries++) {
-    x = -36 + rnd() * 72; z = -32 + rnd() * 45;
-    ok = Math.abs(z - 9) > 4.4
+    x = -36 + rnd() * 72; z = -32 + rnd() * 50;
+    ok = Math.abs(z - 9.2) > 2.3
+      && !(x > -5 && x < 5 && z > 1 && z < 8.2)
       && !(x > -19.5 && x < -8.5 && z > -23 && z < -12.5)
-      && Math.hypot(x + 6, z + 13) > 4.2
-      && !(x > 2 && x < 18 && z > 2 && z < 11)
-      && Math.hypot(x - 2, z - 2) > 1.4;
+      && Math.hypot(x + 6, z + 13) > 4.2;
   }
-  wheatData.push({ x, z, ry: rnd() * 6.28, tilt: (rnd() - 0.5) * 0.18, ph: rnd() * 6.28, s: 0.8 + rnd() * 0.55 });
-  wc.setHSL(0.105 + rnd() * 0.028, 0.52 + rnd() * 0.14, 0.40 + rnd() * 0.14);
+  wheatData.push({ x, z, ry: rnd() * 6.28, tilt: (rnd() - 0.5) * 0.18, ph: rnd() * 6.28, s: 1.05 + rnd() * 0.75 });
+  wc.setHSL(0.10 + rnd() * 0.026, 0.55 + rnd() * 0.14, 0.42 + rnd() * 0.13);
   wheat.setColorAt(i, wc);
 }
 wheat.instanceColor.needsUpdate = true;
@@ -411,17 +419,18 @@ function updateWheat(t) {
 
 // ------------------------------------------------------------ emus (instanced flock)
 const EG = {};
-EG.body = new THREE.SphereGeometry(0.5, 6, 4); EG.body.scale(1.0, 0.9, 1.35);
-EG.neck = new THREE.CylinderGeometry(0.075, 0.125, 0.78, 5);
-EG.head = new THREE.BoxGeometry(0.2, 0.2, 0.26);
-EG.beak = new THREE.ConeGeometry(0.065, 0.22, 4); EG.beak.rotateX(Math.PI / 2);
-EG.tail = new THREE.ConeGeometry(0.24, 0.5, 4); EG.tail.rotateX(-Math.PI / 2);
+EG.body = new THREE.SphereGeometry(0.5, 6, 4); EG.body.scale(0.88, 0.74, 1.3);
+EG.neck1 = new THREE.CylinderGeometry(0.065, 0.115, 0.55, 5);
+EG.neck2 = new THREE.CylinderGeometry(0.055, 0.07, 0.45, 5);
+EG.head = new THREE.BoxGeometry(0.16, 0.18, 0.3);
+EG.beak = new THREE.ConeGeometry(0.05, 0.2, 4); EG.beak.rotateX(Math.PI / 2); EG.beak.translate(0, -0.01, 0.24);
+EG.tail = new THREE.ConeGeometry(0.22, 0.55, 4); EG.tail.rotateX(-Math.PI / 2);
 EG.leg = (() => {
-  const a = new THREE.CylinderGeometry(0.045, 0.035, 0.72, 4); a.translate(0, -0.36, 0);
-  const f = new THREE.BoxGeometry(0.18, 0.05, 0.28); f.translate(0, -0.72, 0.06);
+  const a = new THREE.CylinderGeometry(0.04, 0.032, 0.78, 4); a.translate(0, -0.39, 0);
+  const f = new THREE.BoxGeometry(0.17, 0.05, 0.3); f.translate(0, -0.78, 0.07);
   return mergeGeometries([a, f], false);
 })();
-EG.shadow = new THREE.CircleGeometry(0.55, 8);
+EG.shadow = new THREE.CircleGeometry(0.5, 8);
 
 const EMU_N = 56;
 const emuMat = ps1(new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }));
@@ -431,100 +440,109 @@ function inst(geo, mat, n) {
   m.frustumCulled = false; scene.add(m); return m;
 }
 const EM = {
-  body: inst(EG.body, emuMat, EMU_N), neck: inst(EG.neck, emuMat, EMU_N),
-  head: inst(EG.head, emuMat, EMU_N), beak: inst(EG.beak, emuMat, EMU_N),
-  tail: inst(EG.tail, emuMat, EMU_N), legL: inst(EG.leg, emuMat, EMU_N),
-  legR: inst(EG.leg, emuMat, EMU_N), shadow: inst(EG.shadow, MAT.shadow, EMU_N),
+  body: inst(EG.body, emuMat, EMU_N), neck1: inst(EG.neck1, emuMat, EMU_N),
+  neck2: inst(EG.neck2, emuMat, EMU_N), head: inst(EG.head, emuMat, EMU_N),
+  beak: inst(EG.beak, emuMat, EMU_N), tail: inst(EG.tail, emuMat, EMU_N),
+  legL: inst(EG.leg, emuMat, EMU_N), legR: inst(EG.leg, emuMat, EMU_N),
+  shadow: inst(EG.shadow, MAT.shadow, EMU_N),
 };
 const EMU_MESHES = Object.values(EM);
-const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 
 function makeEmuRig() {
   const root = new THREE.Object3D();
   const body = new THREE.Object3D(); body.position.y = 1.05; root.add(body);
   const bodyM = new THREE.Object3D(); body.add(bodyM);
-  const neck = new THREE.Object3D(); neck.position.set(0, 0.28, 0.5); neck.rotation.x = 0.35; body.add(neck);
-  const neckM = new THREE.Object3D(); neckM.position.y = 0.39; neck.add(neckM);
-  const head = new THREE.Object3D(); head.position.y = 0.78; neck.add(head);
+  const neck1 = new THREE.Object3D(); neck1.position.set(0, 0.18, 0.4); neck1.rotation.x = 0.45; body.add(neck1);
+  const neck1M = new THREE.Object3D(); neck1M.position.y = 0.275; neck1.add(neck1M);
+  const neck2 = new THREE.Object3D(); neck2.position.y = 0.55; neck2.rotation.x = -0.5; neck1.add(neck2);
+  const neck2M = new THREE.Object3D(); neck2M.position.y = 0.225; neck2.add(neck2M);
+  const head = new THREE.Object3D(); head.position.y = 0.45; head.rotation.x = -0.05; neck2.add(head);
   const headM = new THREE.Object3D(); head.add(headM);
-  const beakM = new THREE.Object3D(); beakM.position.set(0, 0, 0.16); head.add(beakM);
-  const tail = new THREE.Object3D(); tail.position.set(0, 0.12, -0.58); tail.rotation.x = 0.5; body.add(tail);
+  const beakM = new THREE.Object3D(); beakM.position.set(0, -0.01, 0.24); head.add(beakM);
+  const tail = new THREE.Object3D(); tail.position.set(0, 0.1, -0.58); tail.rotation.x = 0.55; body.add(tail);
   const tailM = new THREE.Object3D(); tail.add(tailM);
-  const legL = new THREE.Object3D(); legL.position.set(-0.19, 0.76, 0.02); root.add(legL);
-  const legLM = new THREE.Object3D(); legLM.position.y = -0.36; legL.add(legLM);
-  const legR = new THREE.Object3D(); legR.position.set(0.19, 0.76, 0.02); root.add(legR);
-  const legRM = new THREE.Object3D(); legRM.position.y = -0.36; legR.add(legRM);
-  const shadowM = new THREE.Object3D(); shadowM.position.y = 0.012; shadowM.rotation.x = -Math.PI / 2; shadowM.scale.set(1, 1.4, 1); root.add(shadowM);
-  return { root, body, neck, head, tail, legL, legR, bodyM, neckM, headM, beakM, tailM, legLM, legRM, shadowM };
+  const legL = new THREE.Object3D(); legL.position.set(-0.17, 0.78, 0.02); root.add(legL);
+  const legLM = new THREE.Object3D(); legLM.position.y = -0.39; legL.add(legLM);
+  const legR = new THREE.Object3D(); legR.position.set(0.17, 0.78, 0.02); root.add(legR);
+  const legRM = new THREE.Object3D(); legRM.position.y = -0.39; legR.add(legRM);
+  const shadowM = new THREE.Object3D(); shadowM.position.y = 0.012; shadowM.rotation.x = -Math.PI / 2; shadowM.scale.set(1, 1.35, 1); root.add(shadowM);
+  return { root, body, neck1, neck2, head, tail, legL, legR, bodyM, neck1M, neck2M, headM, beakM, tailM, legLM, legRM, shadowM };
 }
 
 const flock = [];
-const bodyCol = new THREE.Color(), darkCol = new THREE.Color(), legCol = new THREE.Color(0x4a4036);
+const bodyCol = new THREE.Color(), neckCol = new THREE.Color(), darkCol = new THREE.Color(), legCol = new THREE.Color(0x453a2e);
 for (let i = 0; i < EMU_N; i++) {
   const rig = makeEmuRig();
   let hx, hz;
-  if (i < 10) { hx = -7 + rnd() * 11; hz = 0.3 + rnd() * 2.0; }
+  if (i < 14) { hx = -13 + rnd() * 18; hz = -3.8 + rnd() * 3.6; }
   else {
     let ok = false;
-    for (let tries = 0; tries < 24 && !ok; tries++) {
-      hx = -22 + rnd() * 44; hz = -17 + rnd() * 17.5;
-      ok = !(hx > -19 && hx < -9 && hz > -23 && hz < -13) && !(hx > 2 && hz > 2.5);
+    for (let tries = 0; tries < 30 && !ok; tries++) {
+      hx = -26 + rnd() * 52; hz = -18 + rnd() * 16.5;
+      ok = !(hx > -19.5 && hx < -8.5 && hz > -23 && hz < -12.5)
+        && Math.hypot(hx + 6, hz + 13) > 4.5;
     }
   }
   rig.root.position.set(hx, 0, hz);
   rig.root.rotation.y = rnd() * 6.28;
-  rig.root.scale.setScalar(0.84 + rnd() * 0.24);
+  rig.root.scale.setScalar(0.82 + rnd() * 0.16);
   rig.home = new THREE.Vector2(hx, hz);
   rig.ph = rnd() * 6.28;
   rig.face = rnd() * 6.28;
   rig.walkBias = rnd();
   flock.push(rig);
 
-  bodyCol.setHSL(0.085 + rnd() * 0.035, 0.16 + rnd() * 0.10, 0.30 + rnd() * 0.10);
-  darkCol.setHSL(0.075 + rnd() * 0.03, 0.18 + rnd() * 0.08, 0.24 + rnd() * 0.07);
+  bodyCol.setHSL(0.08 + rnd() * 0.03, 0.18 + rnd() * 0.10, 0.28 + rnd() * 0.08);
+  neckCol.setHSL(0.085 + rnd() * 0.03, 0.16 + rnd() * 0.08, 0.38 + rnd() * 0.08);
+  darkCol.setHSL(0.075 + rnd() * 0.025, 0.20 + rnd() * 0.08, 0.20 + rnd() * 0.06);
   EM.body.setColorAt(i, bodyCol);
-  EM.neck.setColorAt(i, bodyCol);
+  EM.neck1.setColorAt(i, bodyCol);
+  EM.neck2.setColorAt(i, neckCol);
   EM.head.setColorAt(i, darkCol);
-  EM.beak.setColorAt(i, new THREE.Color(0x2b241c));
+  EM.beak.setColorAt(i, new THREE.Color(0x2a221a));
   EM.tail.setColorAt(i, darkCol);
   EM.legL.setColorAt(i, legCol);
   EM.legR.setColorAt(i, legCol);
 }
-for (const m of [EM.body, EM.neck, EM.head, EM.beak, EM.tail, EM.legL, EM.legR]) if (m.instanceColor) m.instanceColor.needsUpdate = true;
+for (const m of [EM.body, EM.neck1, EM.neck2, EM.head, EM.beak, EM.tail, EM.legL, EM.legR]) if (m.instanceColor) m.instanceColor.needsUpdate = true;
 
 function emuPose(p, t, mode) {
-  const sp = mode === 'run' ? 10.5 : mode === 'walk' ? 5.2 : 1.35;
+  const sp = mode === 'run' ? 11.5 : mode === 'walk' ? 5.2 : 1.35;
   const s = Math.sin(t * sp + p.ph);
   if (mode === 'run') {
-    p.body.position.y = 1.05 + Math.abs(s) * 0.06;
-    p.body.rotation.x = 0.2;
-    p.legL.rotation.x = s * 1.05; p.legR.rotation.x = -s * 1.05;
-    p.neck.rotation.x = 0.55 + Math.sin(t * 5 + p.ph) * 0.05;
-    p.head.rotation.x = -0.28;
-    p.tail.rotation.x = 0.2;
-    p.body.rotation.z = Math.sin(t * 5.2 + p.ph) * 0.04;
+    p.body.position.y = 1.05 + Math.abs(s) * 0.07;
+    p.body.rotation.x = 0.18;
+    p.legL.rotation.x = s * 1.15; p.legR.rotation.x = -s * 1.15;
+    p.neck1.rotation.x = 0.72 + Math.sin(t * 5 + p.ph) * 0.06;
+    p.neck2.rotation.x = -0.35;
+    p.head.rotation.x = -0.18;
+    p.tail.rotation.x = 0.3;
+    p.body.rotation.z = Math.sin(t * 5.2 + p.ph) * 0.05;
   } else if (mode === 'walk') {
-    p.body.position.y = 1.05 + Math.abs(s) * 0.035;
+    p.body.position.y = 1.05 + Math.abs(s) * 0.04;
     p.body.rotation.x = 0.04;
-    p.legL.rotation.x = s * 0.5; p.legR.rotation.x = -s * 0.5;
-    p.neck.rotation.x = 0.32 + Math.sin(t * 2.2 + p.ph) * 0.09;
-    p.head.rotation.x = -0.06 + Math.sin(t * 1.9 + p.ph) * 0.1;
-    p.tail.rotation.x = 0.5;
+    p.legL.rotation.x = s * 0.55; p.legR.rotation.x = -s * 0.55;
+    p.neck1.rotation.x = 0.45 + Math.sin(t * 2.2 + p.ph) * 0.07;
+    p.neck2.rotation.x = -0.5;
+    p.head.rotation.x = -0.05 + Math.sin(t * 1.9 + p.ph) * 0.1;
+    p.tail.rotation.x = 0.55;
     p.body.rotation.z = 0;
   } else {
-    const peck = Math.max(0, Math.sin(t * 0.52 + p.ph) - 0.9) / 0.1;
+    const peck = Math.max(0, Math.sin(t * 0.52 + p.ph) - 0.88) / 0.12;
     p.body.position.y = 1.05 + Math.sin(t * 1.3 + p.ph) * 0.012;
     p.body.rotation.x = 0;
     p.legL.rotation.x = 0; p.legR.rotation.x = 0;
-    p.neck.rotation.x = 0.35 + peck * 1.15;
-    p.head.rotation.x = -peck * 0.6 + Math.sin(t * 0.8 + p.ph) * 0.05;
+    p.neck1.rotation.x = 0.45 + peck * 1.25;
+    p.neck2.rotation.x = -0.5 + peck * 0.15;
+    p.head.rotation.x = -peck * 0.55 + Math.sin(t * 0.8 + p.ph) * 0.05;
     p.head.rotation.z = Math.sin(t * 0.6 + p.ph) * 0.12;
-    p.tail.rotation.x = 0.5 + Math.sin(t * 1.1 + p.ph) * 0.08;
+    p.tail.rotation.x = 0.55 + Math.sin(t * 1.1 + p.ph) * 0.08;
     p.body.rotation.z = 0;
   }
 }
 
 function updateFlock(t) {
+  const clearHero = (t >= 3.2 && t < 9.0) || t >= 55.8;
   for (let i = 0; i < flock.length; i++) {
     const p = flock[i];
     let x = p.home.x, z = p.home.y, mode = 'idle', ry = p.face;
@@ -532,33 +550,40 @@ function updateFlock(t) {
       x += Math.sin(t * 0.18 + p.ph) * 0.7; z += Math.cos(t * 0.15 + p.ph) * 0.5;
       if (p.walkBias > 0.55) mode = 'walk';
     } else if (t < 25.6) {
-      x += Math.sin(t * 0.16 + p.ph) * 1.25; z += Math.cos(t * 0.13 + p.ph * 1.3) * 0.85;
-      if (p.walkBias > 0.42) mode = 'walk';
+      x += Math.sin(t * 0.16 + p.ph) * 1.4; z += Math.cos(t * 0.13 + p.ph * 1.3) * 0.9;
+      if (p.walkBias > 0.4) mode = 'walk';
     } else if (t < 33.4) {
       mode = 'idle';
     } else if (t < 51.5) {
       const tc = t - 33.4;
-      x = p.home.x + Math.sin(tc * 0.55 + p.ph) * 5.5;
-      z = p.home.y + Math.cos(tc * 0.45 + p.ph * 1.7) * 3.5;
+      x = p.home.x + Math.sin(tc * 0.55 + p.ph) * 6.0;
+      z = p.home.y + Math.cos(tc * 0.45 + p.ph * 1.7) * 3.8;
       mode = 'run';
-      const dx = Math.cos(tc * 0.55 + p.ph) * 5.5 * 0.55;
-      const dz = -Math.sin(tc * 0.45 + p.ph * 1.7) * 3.5 * 0.45;
+      const dx = Math.cos(tc * 0.55 + p.ph) * 6.0 * 0.55;
+      const dz = -Math.sin(tc * 0.45 + p.ph * 1.7) * 3.8 * 0.45;
       ry = Math.atan2(dx, dz);
     } else {
       const tc = 18.1;
-      x = p.home.x + Math.sin(tc * 0.55 + p.ph) * 5.5;
-      z = p.home.y + Math.cos(tc * 0.45 + p.ph * 1.7) * 3.5;
+      x = p.home.x + Math.sin(tc * 0.55 + p.ph) * 6.0;
+      z = p.home.y + Math.cos(tc * 0.45 + p.ph * 1.7) * 3.8;
       mode = 'idle';
       if (t > 60.1 && p.walkBias > 0.62) { x += Math.sin(t * 0.22 + p.ph) * 0.9; mode = 'walk'; }
     }
-    x = clamp(x, -27, 27); z = clamp(z, -20, 5.2);
+    x = clamp(x, -26, 26); z = clamp(z, -19, t > 33.4 && t < 51.5 ? 3.4 : 4.6);
+    if (clearHero) {
+      z = Math.min(z, 0.15);
+      const cx = t < 9 ? 5.2 : -1.0;
+      const dx = x - cx, dz = z - 1.0, d = Math.hypot(dx, dz);
+      if (d < 3.6) { const k = (3.6 - d) / 3.6; x += (dx / (d || 1)) * k * 4.0; z -= k * 2.2; }
+    }
     p.root.position.set(x, 0, z);
     if (mode !== 'run') ry = p.face + Math.sin(t * 0.12 + p.ph) * 0.5;
     p.root.rotation.y = ry;
     emuPose(p, t, mode);
     p.root.updateMatrixWorld(true);
     EM.body.setMatrixAt(i, p.bodyM.matrixWorld);
-    EM.neck.setMatrixAt(i, p.neckM.matrixWorld);
+    EM.neck1.setMatrixAt(i, p.neck1M.matrixWorld);
+    EM.neck2.setMatrixAt(i, p.neck2M.matrixWorld);
     EM.head.setMatrixAt(i, p.headM.matrixWorld);
     EM.beak.setMatrixAt(i, p.beakM.matrixWorld);
     EM.tail.setMatrixAt(i, p.tailM.matrixWorld);
@@ -572,46 +597,47 @@ function updateFlock(t) {
 // ------------------------------------------------------------ hero emu (close-ups)
 function makeHeroEmu() {
   const root = new THREE.Group();
-  const body = new THREE.Group(); body.position.y = 1.12; root.add(body);
-  const bm = new THREE.Mesh(new THREE.SphereGeometry(0.56, 6, 4), lamC(0x6f6048));
-  bm.scale.set(1.02, 0.92, 1.38); body.add(bm);
-  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.38, 6, 4), lamC(0x7b6a52));
-  chest.scale.set(1, 0.95, 0.95); chest.position.set(0, -0.02, 0.5); body.add(chest);
-  const wingL = box(body, 0.08, 0.4, 0.62, lamC(0x5f523e), -0.5, 0.04, -0.05); wingL.rotation.z = 0.12;
-  const wingR = box(body, 0.08, 0.4, 0.62, lamC(0x5f523e), 0.5, 0.04, -0.05); wingR.rotation.z = -0.12;
+  const body = new THREE.Group(); body.position.y = 1.08; root.add(body);
+  const bm = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 4), lamC(0x6b5a44));
+  bm.scale.set(0.92, 0.78, 1.36); body.add(bm);
+  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.34, 6, 4), lamC(0x7b6850));
+  chest.scale.set(0.95, 0.95, 0.9); chest.position.set(0, -0.04, 0.48); body.add(chest);
+  const wingL = box(body, 0.07, 0.42, 0.7, lamC(0x594b39), -0.45, 0.02, -0.05); wingL.rotation.z = 0.1;
+  const wingR = box(body, 0.07, 0.42, 0.7, lamC(0x594b39), 0.45, 0.02, -0.05); wingR.rotation.z = -0.1;
 
-  const neck = new THREE.Group(); neck.position.set(0, 0.28, 0.58); neck.rotation.x = 0.32; body.add(neck);
-  cyl(neck, 0.075, 0.13, 0.85, 5, lamC(0x6a5a44), 0, 0.42, 0);
-  cone(neck, 0.13, 0.3, 5, lamC(0x5f523e), 0, 0.12, -0.02).rotation.x = Math.PI;
-  const head = new THREE.Group(); head.position.set(0, 0.86, 0); neck.add(head);
-  box(head, 0.2, 0.2, 0.26, lamC(0x716049), 0, 0, 0);
-  const beak = cone(head, 0.07, 0.24, 4, lamC(0x2b241c), 0, -0.01, 0.2); beak.rotation.x = Math.PI / 2;
-  box(head, 0.035, 0.04, 0.02, MAT.dark, -0.1, 0.04, 0.11);
-  box(head, 0.035, 0.04, 0.02, MAT.dark, 0.1, 0.04, 0.11);
+  const neck1 = new THREE.Group(); neck1.position.set(0, 0.18, 0.44); neck1.rotation.x = 0.45; body.add(neck1);
+  cyl(neck1, 0.09, 0.14, 0.6, 5, lamC(0x75624a), 0, 0.3, 0);
+  const neck2 = new THREE.Group(); neck2.position.y = 0.6; neck2.rotation.x = -0.5; neck1.add(neck2);
+  cyl(neck2, 0.065, 0.09, 0.5, 5, lamC(0x7d6a50), 0, 0.25, 0);
+  const head = new THREE.Group(); head.position.y = 0.5; head.rotation.x = -0.05; neck2.add(head);
+  box(head, 0.17, 0.19, 0.3, lamC(0x6a5943), 0, 0, 0.02);
+  const beak = cone(head, 0.055, 0.22, 4, lamC(0x2b241c), 0, -0.01, 0.24); beak.rotation.x = Math.PI / 2;
+  box(head, 0.04, 0.045, 0.02, MAT.dark, -0.085, 0.045, 0.12);
+  box(head, 0.04, 0.045, 0.02, MAT.dark, 0.085, 0.045, 0.12);
 
-  const tail = new THREE.Group(); tail.position.set(0, 0.1, -0.62); tail.rotation.x = 0.5; body.add(tail);
+  const tail = new THREE.Group(); tail.position.set(0, 0.1, -0.62); tail.rotation.x = 0.55; body.add(tail);
   for (let k = 0; k < 3; k++) {
-    const c = cone(tail, 0.13, 0.58, 4, lamC(0x5f523e), (k - 1) * 0.13, 0, -0.12);
-    c.rotation.x = -Math.PI / 2; c.rotation.z = (k - 1) * 0.18;
+    const c = cone(tail, 0.12, 0.55, 4, lamC(0x594b39), (k - 1) * 0.12, 0, -0.12);
+    c.rotation.x = -Math.PI / 2; c.rotation.z = (k - 1) * 0.16;
   }
 
-  const legMat = lamC(0x4a4036);
-  const hipL = new THREE.Group(); hipL.position.set(-0.2, 0.82, 0.02); root.add(hipL);
-  cyl(hipL, 0.055, 0.045, 0.42, 4, legMat, 0, -0.21, 0);
-  const kneeL = new THREE.Group(); kneeL.position.y = -0.42; hipL.add(kneeL);
-  cyl(kneeL, 0.045, 0.035, 0.4, 4, legMat, 0, -0.2, 0);
-  box(kneeL, 0.2, 0.05, 0.3, legMat, 0, -0.4, 0.07);
-  const hipR = new THREE.Group(); hipR.position.set(0.2, 0.82, 0.02); root.add(hipR);
-  cyl(hipR, 0.055, 0.045, 0.42, 4, legMat, 0, -0.21, 0);
-  const kneeR = new THREE.Group(); kneeR.position.y = -0.42; hipR.add(kneeR);
-  cyl(kneeR, 0.045, 0.035, 0.4, 4, legMat, 0, -0.2, 0);
-  box(kneeR, 0.2, 0.05, 0.3, legMat, 0, -0.4, 0.07);
+  const legMat = lamC(0x453a2e);
+  const hipL = new THREE.Group(); hipL.position.set(-0.18, 0.78, 0.02); root.add(hipL);
+  cyl(hipL, 0.05, 0.04, 0.4, 4, legMat, 0, -0.2, 0);
+  const kneeL = new THREE.Group(); kneeL.position.y = -0.4; hipL.add(kneeL);
+  cyl(kneeL, 0.04, 0.032, 0.38, 4, legMat, 0, -0.19, 0);
+  box(kneeL, 0.18, 0.05, 0.3, legMat, 0, -0.38, 0.07);
+  const hipR = new THREE.Group(); hipR.position.set(0.18, 0.78, 0.02); root.add(hipR);
+  cyl(hipR, 0.05, 0.04, 0.4, 4, legMat, 0, -0.2, 0);
+  const kneeR = new THREE.Group(); kneeR.position.y = -0.4; hipR.add(kneeR);
+  cyl(kneeR, 0.04, 0.032, 0.38, 4, legMat, 0, -0.19, 0);
+  box(kneeR, 0.18, 0.05, 0.3, legMat, 0, -0.38, 0.07);
 
-  const sh = new THREE.Mesh(new THREE.CircleGeometry(0.58, 8), MAT.shadow);
-  sh.rotation.x = -Math.PI / 2; sh.position.y = 0.014; sh.scale.set(1, 1.5, 1); root.add(sh);
-  root.scale.setScalar(1.12);
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(0.52, 8), MAT.shadow);
+  sh.rotation.x = -Math.PI / 2; sh.position.y = 0.014; sh.scale.set(1, 1.4, 1); root.add(sh);
+  root.scale.setScalar(1.0);
   scene.add(root);
-  return { root, body, neck, head, hipL, hipR, kneeL, kneeR, tail };
+  return { root, body, neck1, neck2, head, hipL, hipR, kneeL, kneeR, tail };
 }
 const hero = makeHeroEmu();
 hero.root.visible = false;
@@ -619,28 +645,30 @@ hero.root.visible = false;
 function heroPose(t, mode) {
   if (mode === 'walk') {
     const s = Math.sin(t * 5.2);
-    hero.body.position.y = 1.12 + Math.abs(s) * 0.035;
-    hero.hipL.rotation.x = s * 0.5; hero.hipR.rotation.x = -s * 0.5;
-    hero.kneeL.rotation.x = Math.max(0, -s) * 0.7; hero.kneeR.rotation.x = Math.max(0, s) * 0.7;
-    hero.neck.rotation.x = 0.32 + Math.sin(t * 2.6) * 0.06;
-    hero.head.rotation.x = Math.sin(t * 2.6 + 0.4) * 0.06;
+    hero.body.position.y = 1.08 + Math.abs(s) * 0.035;
+    hero.hipL.rotation.x = s * 0.55; hero.hipR.rotation.x = -s * 0.55;
+    hero.kneeL.rotation.x = Math.max(0, -s) * 0.75; hero.kneeR.rotation.x = Math.max(0, s) * 0.75;
+    hero.neck1.rotation.x = 0.45 + Math.sin(t * 2.6) * 0.05;
+    hero.neck2.rotation.x = -0.5;
+    hero.head.rotation.x = -0.05 + Math.sin(t * 2.6 + 0.4) * 0.06;
     hero.head.rotation.z = 0;
   } else {
-    const peck = Math.max(0, Math.sin(t * 0.52 + 0.8) - 0.9) / 0.1;
-    hero.body.position.y = 1.12 + Math.sin(t * 1.4) * 0.012;
+    const peck = Math.max(0, Math.sin(t * 0.52 + 0.8) - 0.88) / 0.12;
+    hero.body.position.y = 1.08 + Math.sin(t * 1.4) * 0.012;
     hero.hipL.rotation.x = 0; hero.hipR.rotation.x = 0;
     hero.kneeL.rotation.x = 0; hero.kneeR.rotation.x = 0;
-    hero.neck.rotation.x = 0.32 + peck * 1.1;
-    hero.head.rotation.x = -peck * 0.55;
-    hero.head.rotation.z = Math.sin(t * 0.7) * 0.13;
+    hero.neck1.rotation.x = 0.45 + peck * 1.2;
+    hero.neck2.rotation.x = -0.5 + peck * 0.15;
+    hero.head.rotation.x = -peck * 0.5 + Math.sin(t * 0.7) * 0.03;
+    hero.head.rotation.z = Math.sin(t * 0.7) * 0.1;
   }
 }
 
 function updateHero(t) {
   let show = false, x = 2, z = 2, ry = 0, mode = 'idle';
-  if (t >= 3.30 && t < 8.96) { show = true; x = 2; z = 2 + smooth(3.3, 8.9, t) * 0.25; ry = 0.12; mode = 'walk'; }
-  else if (t >= 56.0 && t < 60.59) { show = true; x = -1.4; z = 0.6; ry = 0.05; mode = 'idle'; }
-  else if (t >= 68.18) { show = true; x = 1.3; z = -2.2; ry = 1.25; mode = 'idle'; }
+  if (t >= 3.30 && t < 8.96) { show = true; x = 5.2; z = 0.8; ry = 0.3; mode = 'walk'; }
+  else if (t >= 56.0 && t < 60.59) { show = true; x = -1.0; z = 1.0; ry = 0.18; mode = 'idle'; }
+  else if (t >= 68.18) { show = true; x = 1.0; z = -0.5; ry = 0.85; mode = 'idle'; }
   hero.root.visible = show;
   if (!show) return;
   hero.root.position.set(x, 0, z);
@@ -676,30 +704,30 @@ function makePerson(o = {}) {
     body.add(arm);
   }
   const head = new THREE.Group(); head.position.set(0, 1.58, 0); body.add(head);
-  box(head, 0.28, 0.3, 0.26, lamC(skin), 0, 0.12, 0);
-  box(head, 0.3, 0.06, 0.27, lamC(0x2b1d15), 0, 0.265, 0);
-  box(head, 0.04, 0.03, 0.02, MAT.dark, -0.06, 0.14, 0.135);
-  box(head, 0.04, 0.03, 0.02, MAT.dark, 0.06, 0.14, 0.135);
+  box(head, 0.26, 0.28, 0.24, lamC(skin), 0, 0.12, 0);
+  box(head, 0.27, 0.055, 0.25, lamC(0x2b1d15), 0, 0.25, 0);
+  box(head, 0.04, 0.03, 0.02, MAT.dark, -0.055, 0.14, 0.125);
+  box(head, 0.04, 0.03, 0.02, MAT.dark, 0.055, 0.14, 0.125);
   if (o.hat === 'slouch') {
-    cyl(head, 0.37, 0.37, 0.035, 8, lamC(0x6b5a3a), 0, 0.3, 0);
-    cyl(head, 0.16, 0.2, 0.18, 6, lamC(0x6b5a3a), 0, 0.4, 0);
-    box(head, 0.34, 0.03, 0.04, lamC(0x4a3d28), 0, 0.34, 0.16);
+    cyl(head, 0.27, 0.27, 0.035, 8, lamC(0x6b5a3a), 0, 0.285, 0);
+    cyl(head, 0.135, 0.17, 0.17, 6, lamC(0x6b5a3a), 0, 0.38, 0);
+    box(head, 0.26, 0.03, 0.04, lamC(0x4a3d28), 0, 0.325, 0.14);
   } else if (o.hat === 'wide') {
-    cyl(head, 0.39, 0.41, 0.035, 8, lamC(0xd8b56a), 0, 0.3, 0);
-    cyl(head, 0.18, 0.21, 0.2, 6, lamC(0xd8b56a), 0, 0.41, 0);
+    cyl(head, 0.32, 0.34, 0.035, 8, lamC(0xd8b56a), 0, 0.285, 0);
+    cyl(head, 0.155, 0.185, 0.19, 6, lamC(0xd8b56a), 0, 0.39, 0);
   }
   return { root, body, head, armL, armR, legL, legR, phase: rnd() * 6.28 };
 }
 
 const farmer1 = makePerson({ shirt: 0x9a6a3a, trouser: 0x4a4036, hat: 'wide', skin: 0xd8a878 });
-farmer1.root.position.set(-3.2, 0, -4.0); farmer1.root.rotation.y = Math.PI; scene.add(farmer1.root);
+farmer1.root.position.set(-2.6, 0, -3.4); farmer1.root.rotation.y = 0.12; scene.add(farmer1.root);
 const farmer2 = makePerson({ shirt: 0x6f7a52, trouser: 0x3f3a30, hat: 'wide', skin: 0xc98d68 });
-farmer2.root.position.set(-4.9, 0, -4.5); farmer2.root.rotation.y = Math.PI; scene.add(farmer2.root);
+farmer2.root.position.set(-4.3, 0, -3.9); farmer2.root.rotation.y = 0.2; scene.add(farmer2.root);
 
 const soldierDefs = [
-  { pos: [10.4, 0, 8.0], gunner: true },
-  { pos: [11.6, 0, 8.5], loader: true },
-  { pos: [12.4, 0, 8.8], sergeant: true },
+  { pos: [-0.55, 0, 5.5], gunner: true },
+  { pos: [0.9, 0, 5.6], loader: true },
+  { pos: [-2.0, 0, 5.3], sergeant: true },
 ];
 const soldiers = soldierDefs.map((d) => {
   const p = makePerson({ shirt: 0x8a7a4a, trouser: 0x5a5038, hat: 'slouch', webbing: true, skin: 0xd0a070 });
@@ -709,12 +737,15 @@ const soldiers = soldierDefs.map((d) => {
   return p;
 });
 const gunner = soldiers[0], loader = soldiers[1], sergeant = soldiers[2];
-const ammoBox = box(loader.body, 0.48, 0.3, 0.34, lamC(0x5a4a2e), 0, 0.95, 0.34);
-box(ammoBox, 0.5, 0.06, 0.36, lamC(0x3a3020), 0, 0.08, 0);
-ammoBox.visible = false;
+const crates = new THREE.Group(); scene.add(crates);
+for (const [cx, cz, cr] of [[1.9, 5.7, 0.3], [-2.7, 4.9, -0.2], [1.2, 3.9, 0.9]]) {
+  const c = box(crates, 0.72, 0.42, 0.5, lamC(0x6a5636), cx, 0.21, cz, 0, cr, 0);
+  box(c, 0.74, 0.07, 0.52, lamC(0x4a3a24), 0, 0.17, 0);
+  box(c, 0.1, 0.43, 0.52, lamC(0x4a3a24), 0, 0, 0);
+}
 
 // ------------------------------------------------------------ Lewis gun
-const gun = new THREE.Group(); gun.position.set(6.5, 0, 6.5); gun.rotation.y = Math.PI; scene.add(gun);
+const gun = new THREE.Group(); gun.position.set(0, 0, 4.5); gun.rotation.y = Math.PI; scene.add(gun);
 const gunBody = new THREE.Group(); gun.add(gunBody);
 function strut(parent, ax, ay, az, bx, by, bz, r, mat) {
   const a = new THREE.Vector3(ax, ay, az), b = new THREE.Vector3(bx, by, bz);
@@ -736,6 +767,11 @@ box(gunBody, 0.16, 0.2, 0.46, MAT.timber, 0, 0.96, -0.52);
 box(gunBody, 0.09, 0.22, 0.11, MAT.dark, 0, 0.84, -0.3);
 box(gunBody, 0.06, 0.16, 0.06, MAT.dark, 0, 1.06, -0.34, 0.4);
 
+const gun2 = gunBody.clone();
+gun2.position.set(-3.4, 0, 3.9);
+gun2.rotation.y = Math.PI + 0.18;
+scene.add(gun2);
+
 const flashMat = basic({ color: 0xffe066, transparent: true, opacity: 0.95, depthWrite: false });
 const flash = new THREE.Group(); flash.position.set(0, 1.0, 1.16); gun.add(flash);
 const flash1 = cone(flash, 0.19, 0.55, 5, flashMat, 0, 0, 0.14); flash1.rotation.x = Math.PI / 2;
@@ -746,7 +782,7 @@ const smokeMat = basic({ color: 0xcfc6b0, transparent: true, opacity: 0.4, depth
 const smoke = [];
 for (let i = 0; i < 3; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.18 + i * 0.05, 5, 4), smokeMat); s.position.set(0, 1.05, 1.2 + i * 0.2); s.visible = false; gun.add(s); smoke.push(s); }
 
-const panDown = cyl(scene, 0.23, 0.23, 0.07, 8, MAT.dark, 6.9, 0.05, 7.45);
+const panDown = cyl(scene, 0.23, 0.23, 0.07, 8, MAT.dark, 0.35, 0.05, 5.1);
 panDown.visible = false;
 
 const tracerMat = basic({ color: 0xffe28a, transparent: true, opacity: 0.8, depthWrite: false });
@@ -764,7 +800,7 @@ for (let i = 0; i < 4; i++) {
 const UP = new THREE.Vector3(0, 1, 0);
 
 // ------------------------------------------------------------ 1930s truck
-const truck = new THREE.Group(); truck.position.set(-6, 0, 7.5); scene.add(truck);
+const truck = new THREE.Group(); truck.position.set(-24, 0, 9.2); scene.add(truck);
 const khaki = lamC(0x6f6a44), khaki2 = lamC(0x5c5838);
 box(truck, 4.9, 0.25, 1.85, khaki2, 0, 0.62, 0);
 box(truck, 1.55, 1.25, 1.72, khaki, 1.5, 1.35, 0);
@@ -800,9 +836,9 @@ const dustMat = new THREE.PointsMaterial({ map: T.dust, size: 0.55, transparent:
 const dust = new THREE.Points(dustGeo, dustMat); dust.frustumCulled = false; scene.add(dust);
 
 // ------------------------------------------------------------ lights, birds
-const hemi = new THREE.HemisphereLight(0x9fb2c8, 0x6a5030, 0.95); scene.add(hemi);
-const key = new THREE.DirectionalLight(0xfff0d0, 1.25); key.position.set(-10, 12, 8); scene.add(key);
-const fill = new THREE.DirectionalLight(0x8fa8c8, 0.4); fill.position.set(8, 6, -8); scene.add(fill);
+const hemi = new THREE.HemisphereLight(0xb8c8d8, 0x8a6a40, 1.0); scene.add(hemi);
+const key = new THREE.DirectionalLight(0xfff2d8, 1.5); key.position.set(-10, 14, 10); scene.add(key);
+const fill = new THREE.DirectionalLight(0xc8c0b8, 0.5); fill.position.set(8, 6, 12); scene.add(fill);
 
 const birdMat = basic({ color: 0x2a2a30, fog: false });
 const birds = [];
@@ -817,29 +853,29 @@ for (let i = 0; i < 3; i++) {
 
 // ------------------------------------------------------------ camera shots
 const SHOTS = [
-  { t0: 0.00, t1: 3.30, p0: [11, 3.4, 20], p1: [8, 3.0, 17], look0: [0, 1.2, -8], look1: [0, 1.2, -7], fov0: 56, fov1: 54, shake: 0.15 },
-  { t0: 3.30, t1: 8.96, p0: [2.8, 1.6, 7.2], p1: [2.5, 1.5, 6.2], look0: [2, 1.35, 2.1], look1: [2, 1.3, 2.2], fov0: 42, fov1: 40, shake: 0.2 },
-  { t0: 8.96, t1: 13.50, p0: [-9, 4.3, 14.5], p1: [-5.5, 3.7, 11.5], look0: [0, 1.0, -10], look1: [0, 1.0, -9], fov0: 60, fov1: 57, shake: 0.3 },
-  { t0: 13.50, t1: 20.10, p0: [9.2, 2.25, 10.2], p1: [7.4, 2.05, 8.4], look0: [0, 1.1, -3.5], look1: [0, 1.1, -3.0], fov0: 50, fov1: 48, shake: 0.3 },
-  { t0: 20.10, t1: 26.10, p0: [0.6, 0.95, 8.0], p1: [0.2, 0.9, 6.6], look0: [0, 1.15, -2.5], look1: [0, 1.1, -2.0], fov0: 56, fov1: 54, shake: 0.35 },
-  { t0: 26.10, t1: 30.60, p0: [19, 2.7, 14.5], p1: [14.5, 2.3, 11.5], look0: [8, 1.0, 4], look1: [9, 1.0, 5], fov0: 52, fov1: 50, shake: 0.4 },
-  { t0: 30.60, t1: 33.40, p0: [7.9, 1.55, 11.1], p1: [7.1, 1.45, 10.2], look0: [6.4, 1.05, 7.0], look1: [6.3, 1.05, 6.8], fov0: 42, fov1: 40, shake: 0.25 },
-  { t0: 33.40, t1: 37.06, p0: [9.0, 2.0, 12.2], p1: [8.3, 1.9, 11.0], look0: [3.5, 1.4, 0], look1: [3.0, 1.35, -0.5], fov0: 46, fov1: 44, shake: 0.2 },
-  { t0: 37.06, t1: 40.40, p0: [-7.5, 5.0, 15.5], p1: [-5.0, 4.2, 12.5], look0: [2, 0.9, -4], look1: [2, 0.9, -3], fov0: 62, fov1: 58, shake: 0.8 },
-  { t0: 40.40, t1: 45.00, p0: [8.8, 1.75, 10.9], p1: [8.1, 1.6, 10.0], look0: [6.3, 1.05, 6.6], look1: [6.2, 1.05, 6.4], fov0: 40, fov1: 38, shake: 0.9 },
-  { t0: 45.00, t1: 48.20, p0: [7.6, 1.65, 10.8], p1: [7.0, 1.55, 10.1], look0: [6.3, 1.15, 6.7], look1: [6.2, 1.1, 6.6], fov0: 42, fov1: 40, shake: 0.5 },
-  { t0: 48.20, t1: 51.99, p0: [3.2, 1.3, 9.6], p1: [2.0, 1.15, 8.2], look0: [2.0, 1.05, 2.0], look1: [1.8, 1.0, 1.5], fov0: 52, fov1: 50, shake: 0.6 },
-  { t0: 51.99, t1: 56.00, p0: [-3.2, 2.9, 11.5], p1: [-2.2, 2.5, 9.8], look0: [5.0, 0.9, 4.0], look1: [4.8, 0.9, 3.6], fov0: 52, fov1: 50, shake: 0.15 },
-  { t0: 56.00, t1: 60.59, p0: [0.2, 1.45, 10.2], p1: [0.0, 1.35, 8.9], look0: [-0.6, 1.45, 0.5], look1: [-0.6, 1.4, 0.4], fov0: 46, fov1: 44, shake: 0.1 },
-  { t0: 60.59, t1: 64.50, p0: [12.4, 3.3, 13.4], p1: [10.2, 2.8, 11.2], look0: [9.5, 1.1, 6.5], look1: [9.5, 1.05, 6.3], fov0: 52, fov1: 50, shake: 0.2 },
-  { t0: 64.50, t1: 68.18, p0: [16.5, 2.5, 13.5], p1: [18.5, 2.3, 14.0], look0: [16.0, 1.0, 7.0], look1: [19.0, 1.0, 7.5], fov0: 54, fov1: 52, shake: 0.25 },
-  { t0: 68.18, t1: 73.05, p0: [5.2, 2.0, 12.5], p1: [4.2, 2.15, 9.8], look0: [1.3, 1.45, -1.4], look1: [1.3, 1.5, -1.8], fov0: 46, fov1: 44, shake: 0.08 },
-  { t0: 73.05, t1: 80.00, p0: [0.0, 4.6, 18.0], p1: [0.0, 5.8, 24.0], look0: [0, 1.2, -2.0], look1: [0, 1.1, -2.0], fov0: 52, fov1: 50, shake: 0.0 },
+  { t0: 0.00, t1: 3.30, p0: [14, 4.2, 18], p1: [11.5, 3.6, 15.5], look0: [-6, 1.5, -8], look1: [-6, 1.5, -8], fov0: 55, fov1: 52, shake: 0.15 },
+  { t0: 3.30, t1: 8.96, p0: [9.9, 1.45, 6.4], p1: [9.2, 1.4, 5.7], look0: [5.2, 1.55, 0.7], look1: [5.2, 1.6, 0.7], fov0: 40, fov1: 38, shake: 0.2 },
+  { t0: 8.96, t1: 13.50, p0: [10.5, 2.8, 10.5], p1: [8.0, 2.4, 8.5], look0: [-2, 1.2, -5], look1: [-2, 1.2, -5], fov0: 56, fov1: 53, shake: 0.3 },
+  { t0: 13.50, t1: 20.10, p0: [12, 3.2, 8], p1: [9, 2.8, 6.5], look0: [0, 1.1, -6], look1: [0, 1.1, -6], fov0: 54, fov1: 50, shake: 0.3 },
+  { t0: 20.10, t1: 24.30, p0: [3.2, 1.3, 4.4], p1: [2.6, 1.25, 3.6], look0: [0.5, 1.15, 0.4], look1: [0.3, 1.1, 0.2], fov0: 52, fov1: 50, shake: 0.35 },
+  { t0: 24.30, t1: 26.10, p0: [3.4, 1.65, 2.2], p1: [3.0, 1.6, 1.6], look0: [-3.4, 1.25, -3.4], look1: [-3.4, 1.25, -3.4], fov0: 42, fov1: 40, shake: 0.3 },
+  { t0: 26.10, t1: 30.60, p0: [14, 3.2, 14.5], p1: [11, 2.7, 11.5], look0: [3, 1.2, 6], look1: [3, 1.2, 6], fov0: 52, fov1: 50, shake: 0.4 },
+  { t0: 30.60, t1: 33.40, p0: [6.6, 1.55, 7.8], p1: [5.9, 1.45, 7.0], look0: [0.2, 1.05, 4.6], look1: [0.2, 1.05, 4.6], fov0: 42, fov1: 40, shake: 0.25 },
+  { t0: 33.40, t1: 37.06, p0: [-5.0, 2.0, 9.0], p1: [-3.6, 1.8, 7.4], look0: [-0.5, 1.2, 4.5], look1: [-0.5, 1.2, 4.5], fov0: 46, fov1: 44, shake: 0.2 },
+  { t0: 37.06, t1: 40.40, p0: [4.2, 1.9, 8.8], p1: [3.2, 1.8, 7.8], look0: [-8, 1.0, 0.0], look1: [-8, 1.0, 0.0], fov0: 54, fov1: 50, shake: 0.8 },
+  { t0: 40.40, t1: 45.00, p0: [7.5, 1.6, 9.5], p1: [6.7, 1.5, 8.6], look0: [0, 1.1, 4.3], look1: [-0.2, 1.05, 4.1], fov0: 44, fov1: 42, shake: 0.9 },
+  { t0: 45.00, t1: 48.20, p0: [4.8, 1.5, 7.4], p1: [4.2, 1.4, 6.8], look0: [-0.6, 1.05, 5.0], look1: [-0.8, 1.0, 5.1], fov0: 40, fov1: 38, shake: 0.5 },
+  { t0: 48.20, t1: 51.99, p0: [-5.2, 1.6, 8.0], p1: [-4.2, 1.45, 7.0], look0: [-0.8, 1.0, 5.4], look1: [-0.8, 0.95, 5.3], fov0: 44, fov1: 42, shake: 0.6 },
+  { t0: 51.99, t1: 56.00, p0: [10, 3.4, 12.0], p1: [8, 3.0, 10.5], look0: [-0.5, 1.0, 4.5], look1: [-0.5, 1.0, 4.2], fov0: 50, fov1: 48, shake: 0.15 },
+  { t0: 56.00, t1: 60.59, p0: [4.2, 1.5, 9.6], p1: [3.8, 1.5, 9.0], look0: [0.5, 1.7, 0.8], look1: [0.5, 1.7, 0.8], fov0: 44, fov1: 42, shake: 0.1 },
+  { t0: 60.59, t1: 64.50, p0: [2.5, 2.6, 14.0], p1: [3.5, 2.4, 12.5], look0: [6, 1.2, 8.8], look1: [7, 1.2, 8.8], fov0: 52, fov1: 50, shake: 0.2 },
+  { t0: 64.50, t1: 68.18, p0: [6.0, 2.2, 14.0], p1: [8.0, 2.1, 14.5], look0: [16, 1.2, 6.5], look1: [24, 1.2, 6.5], fov0: 52, fov1: 50, shake: 0.25 },
+  { t0: 68.18, t1: 80.00, p0: [4.8, 1.7, 9.6], p1: [2.2, 3.4, 16.0], look0: [0.9, 1.55, -0.6], look1: [0.4, 1.3, -1.6], fov0: 46, fov1: 50, shake: 0.08 },
 ];
 
 // ------------------------------------------------------------ captions + overlay
 const CAPS = SPEC.caps || [];
-const capEl = document.getElementById('cap'), tagEl = document.getElementById('tag'), fadeEl = document.getElementById('fade');
+const capEl = document.getElementById('cap'), tagEl = document.getElementById('tag'), fadeEl = document.getElementById('fade'), shadeEl = document.getElementById('shade');
 const statEl = document.getElementById('stat'), statKick = document.getElementById('statKick');
 const statNum = document.getElementById('statNum'), statLbl = document.getElementById('statLbl');
 const titleEl = document.getElementById('title'), titleKick = document.getElementById('titleKick');
@@ -871,13 +907,13 @@ function updateOverlay(t) {
   const statOn = t >= 56.0 && t < 60.15;
   if (statOn) {
     const second = t >= 58.25;
-    const tag = second ? 'AMUNISI DIKERAHKAN' : 'OPERATION 1';
+    const tag = second ? 'AMUNISI' : 'OPERASI 1';
     if (lastStat !== tag) {
       lastStat = tag;
       statKick.textContent = tag;
-      statNum.textContent = second ? '10,000' : '30';
+      statNum.textContent = second ? '10.000' : '30';
       statNum.style.fontSize = second ? '168px' : '210px';
-      statLbl.textContent = second ? 'ROUNDS' : 'EMUS';
+      statLbl.textContent = second ? 'PELURU' : 'EMU';
     }
     const a = smooth(56.0, 56.3, t) * (1 - smooth(59.9, 60.15, t));
     const pop = second ? smooth(58.25, 58.55, t) : smooth(56.0, 56.4, t);
@@ -889,6 +925,7 @@ function updateOverlay(t) {
   }
 
   const titleOn = t >= 68.30;
+  shadeEl.style.opacity = titleOn ? (smooth(68.3, 69.3, t) * 0.95).toFixed(3) : '0';
   titleEl.style.visibility = titleOn ? 'visible' : 'hidden';
   titleEl.style.opacity = titleOn ? smooth(68.3, 69.2, t).toFixed(3) : '0';
   titleKick.style.opacity = smooth(68.4, 69.3, t).toFixed(3);
@@ -925,29 +962,31 @@ function updateFarmers(t) {
   farmer1.root.visible = on; farmer2.root.visible = on;
   if (!on) return;
   for (const f of [farmer1, farmer2]) { resetPerson(f); f.body.position.y = Math.sin(t * 1.3 + f.phase) * 0.008; }
-  const wave = smooth(14.2, 15.0, t) * (1 - smooth(19.6, 20.4, t));
-  farmer1.armR.rotation.z = -0.2 - wave * 2.0;
-  farmer1.armR.rotation.x = -0.2 - wave * 0.35 + Math.sin(t * 9) * wave * 0.18;
-  const point = smooth(20.3, 21.2, t) * (1 - smooth(25.4, 26.0, t));
+  const wave = smooth(13.8, 14.6, t) * (1 - smooth(19.4, 20.2, t));
+  const shoo = smooth(24.3, 24.7, t) * (1 - smooth(25.8, 26.1, t));
+  farmer1.armR.rotation.z = -0.2 - Math.max(wave * 2.0, shoo * 1.6);
+  farmer1.armR.rotation.x = -0.2 - wave * 0.35 - shoo * 0.5 + Math.sin(t * 9) * (wave * 0.18 + shoo * 0.25);
+  const point = smooth(20.3, 21.2, t) * (1 - smooth(23.9, 24.5, t));
   farmer2.armR.rotation.x = -point * 1.45;
   farmer2.armR.rotation.z = -0.1;
+  farmer2.armL.rotation.z = 0.2 + shoo * 1.5;
+  farmer2.armL.rotation.x = -shoo * 0.6 + Math.sin(t * 9 + 1) * shoo * 0.2;
   farmer1.head.rotation.z = Math.sin(t * 0.9) * 0.08;
 }
 
 function updateSoldiers(t) {
-  const on = t >= 26.4 && t < 64.6;
+  const on = t >= 28.9 && t < 64.55;
   for (const s of soldiers) s.root.visible = on;
   if (!on) return;
   for (const s of soldiers) resetPerson(s);
-  ammoBox.visible = (t >= 26.4 && t < 33.6) || (t >= 60.5 && t < 63.6);
 
-  const gunSpots = [[6.5, 7.75], [7.8, 7.15], [8.9, 7.8]];
-  const dropSpots = [[10.4, 8.0], [11.6, 8.5], [12.4, 8.8]];
-  const restSpots = [[5.6, 6.7], [7.7, 6.4], [8.8, 7.1]];
-  const truckSpots = [[12.3, 8.1], [13.2, 8.35], [14.0, 8.6]];
+  const gunSpots = [[-0.55, 5.5], [0.9, 5.6], [-2.0, 5.3]];
+  const dropSpots = [[5.6, 9.4], [6.4, 9.6], [7.2, 9.8]];
+  const restSpots = [[5.2, 7.2], [6.2, 7.4], [7.2, 7.6]];
+  const truckSpots = [[4.6, 9.6], [5.5, 9.7], [6.4, 9.8]];
 
-  if (t < 30.5) {
-    const k = smooth(27.0, 30.4, t);
+  if (t < 32.2) {
+    const k = smooth(29.2, 32.0, t);
     soldiers.forEach((s, i) => {
       s.root.position.set(lerp(dropSpots[i][0], gunSpots[i][0], k), 0, lerp(dropSpots[i][1], gunSpots[i][1], k));
       s.root.rotation.y = Math.PI;
@@ -964,7 +1003,7 @@ function updateSoldiers(t) {
       gunner.armL.rotation.x = -1.15; gunner.armR.rotation.x = -1.15; gunner.head.rotation.x = 0.12;
       loader.root.position.y = -0.22; loader.legL.rotation.x = -0.7; loader.legR.rotation.x = -0.7;
       loader.armL.rotation.x = -1.0; loader.armR.rotation.x = -1.0;
-      const point = smooth(30.6, 31.4, t) * (1 - smooth(36.2, 37.0, t));
+      const point = smooth(32.4, 33.2, t) * (1 - smooth(36.2, 37.0, t));
       sergeant.armR.rotation.x = -point * 1.5;
       sergeant.armR.rotation.z = -0.15;
       sergeant.head.rotation.x = -point * 0.1;
@@ -1009,31 +1048,36 @@ function updateSoldiers(t) {
     return;
   }
 
-  if (t < 63.5) {
-    const k = smooth(60.6, 63.4, t);
+  if (t < 63.4) {
+    const k = smooth(60.6, 63.3, t);
     soldiers.forEach((s, i) => {
-      s.root.position.set(lerp(gunSpots[i][0], truckSpots[i][0], k), 0, lerp(gunSpots[i][1], truckSpots[i][1], k));
+      s.root.position.set(lerp(restSpots[i][0], truckSpots[i][0], k), 0, lerp(restSpots[i][1], truckSpots[i][1], k));
       s.root.rotation.y = Math.PI / 2;
       walkPerson(s, t, 1.0);
     });
     return;
   }
 
+  const climb = smooth(63.5, 64.4, t);
   soldiers.forEach((s, i) => {
-    s.root.position.set(truckSpots[i][0], 0, truckSpots[i][1]);
+    s.root.position.set(truckSpots[i][0], climb * 1.05, truckSpots[i][1]);
     s.root.rotation.y = Math.PI / 2;
     s.body.position.y = Math.sin(t * 1.4 + i) * 0.008;
+    s.legL.rotation.x = -climb * 0.6; s.legR.rotation.x = -climb * 0.2;
+    s.armL.rotation.x = -climb * 0.8; s.armR.rotation.x = -climb * 0.8;
   });
 }
 
 function updateGun(t) {
   gun.visible = t >= 26.0;
+  gun2.visible = gun.visible;
+  crates.visible = gun.visible;
   if (!gun.visible) return;
   const firing = t >= 40.55 && t < 44.95;
   const burst = firing && (Math.floor((t - 40.55) * 7) % 3 !== 2);
   flash.visible = burst;
   if (burst) flash.scale.setScalar(0.85 + rnd() * 0.35);
-  gun.position.z = 6.5 + (burst ? 0.05 : 0);
+  gun.position.z = 4.5 + (burst ? 0.05 : 0);
   pan.rotation.y = firing ? t * 4.0 : 0;
   smoke.forEach((s, i) => {
     s.visible = firing;
@@ -1074,8 +1118,8 @@ function updateTruck(t) {
   truck.visible = on;
   if (!on) return;
   let x;
-  if (t < 64.5) x = lerp(-6, 13, smooth(26.1, 30.5, t));
-  else x = lerp(13, 42, smooth(64.5, 68.1, t));
+  if (t < 64.5) x = lerp(-24, 5.5, smooth(26.1, 28.8, t));
+  else x = lerp(5.5, 42, smooth(64.5, 68.1, t));
   truck.position.x = x;
   truck.position.y = Math.abs(Math.sin(t * 16)) * 0.018;
   for (const w of wheels) w.rotation.z = -x / 0.55;
@@ -1088,7 +1132,7 @@ function updateDust(t) {
     let x, z, y;
     if (truckMoving) {
       x = truck.position.x - 2.0 + Math.sin(i * 2.1 + t * 3.0) * 1.3;
-      z = 7.5 + Math.cos(i * 1.7) * 1.1;
+      z = 9.2 + Math.cos(i * 1.7) * 1.1;
       y = 0.15 + Math.abs(Math.sin(t * 4 + i)) * 0.55;
     } else if (chaos) {
       const e = flock[i % flock.length];
@@ -1134,10 +1178,10 @@ function updateSky(t) {
   sun.material.color.copy(C.sunDay).lerp(C.sunGold, k1).lerp(C.sunDusk, k2).lerp(C.sunSet, k3);
   sun.position.y = 24 - 4 * k1 - 6 * k2 - 4 * k3;
   key.color.copy(C.keyDay).lerp(C.keyGold, k1).lerp(C.keyDusk, k2).lerp(C.keySet, k3);
-  key.intensity = 1.25 + 0.1 * k1 - 0.32 * k2 - 0.16 * k3;
+  key.intensity = 1.5 + 0.1 * k1 - 0.35 * k2 - 0.2 * k3;
   key.position.y = 12 - 3 * k1 - 5 * k2 - 1 * k3;
-  hemi.intensity = 0.95 - 0.08 * k1 - 0.2 * k2 - 0.1 * k3;
-  fill.intensity = 0.4 - 0.04 * k1 - 0.1 * k2;
+  hemi.intensity = 1.0 - 0.1 * k1 - 0.15 * k2 - 0.05 * k3;
+  fill.intensity = 0.5 - 0.05 * k1 - 0.05 * k2;
   cloudMat.color.copy(C.cloudDay).lerp(C.cloudGold, k1).lerp(C.cloudDusk, k2).lerp(C.cloudSet, k3);
   hillA.material.color.copy(C.hillDay).lerp(C.hillGold, k1).lerp(C.hillDusk, k2).lerp(C.hillSet, k3);
   hillB.material.color.copy(C.hill2Day).lerp(C.hill2Gold, k1).lerp(C.hill2Dusk, k2).lerp(C.hill2Set, k3);
