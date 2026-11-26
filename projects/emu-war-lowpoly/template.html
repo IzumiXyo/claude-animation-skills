@@ -31,19 +31,6 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#1c1f24}
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 </head>
 <body>
-<script>
-function __showErr(msg) {
-  let d = document.getElementById('err');
-  if (!d) {
-    d = document.createElement('div'); d.id = 'err';
-    d.style.cssText = 'position:absolute;z-index:9999;left:0;top:0;width:1080px;min-height:400px;padding:40px;background:#000;color:#ff5555;font:700 30px/1.3 monospace;white-space:pre-wrap;word-break:break-all';
-    document.getElementById('root').appendChild(d);
-  }
-  d.textContent += msg + '\n';
-}
-window.addEventListener('error', (e) => __showErr('ERR: ' + (e.message || e.error) + '\n' + (e.error && e.error.stack ? e.error.stack : '') + '\n@ ' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || '')));
-window.addEventListener('unhandledrejection', (e) => __showErr('REJ: ' + (e.reason && (e.reason.stack || e.reason.message || e.reason))));
-</script>
 <div id="root" data-composition-id="main" data-start="0" data-duration="__DURATION__" data-fps="24" data-width="1080" data-height="1920">
 <canvas id="c" width="360" height="640"></canvas>
 <div id="vignette"></div>
@@ -1154,49 +1141,22 @@ function updateCamera(t) {
   camera.updateProjectionMatrix();
 }
 
-const dbgEl = document.createElement('div');
-dbgEl.style.cssText = 'position:absolute;z-index:9998;left:0;top:0;width:1080px;padding:16px;background:rgba(0,0,0,.55);color:#7fff7f;font:700 22px/1.25 monospace;white-space:pre';
-document.getElementById('root').appendChild(dbgEl);
-const DBG_V = new THREE.Vector3();
-function dbgProj(label, x, y, z) {
-  DBG_V.set(x, y, z).project(camera);
-  return `${label} ndc=${DBG_V.x.toFixed(2)},${DBG_V.y.toFixed(2)} px=${((DBG_V.x * 0.5 + 0.5) * 1080) | 0},${((-DBG_V.y * 0.5 + 0.5) * 1920) | 0}`;
-}
-function updateDbg(t) {
-  const r = camera.rotation;
-  const gb = new THREE.Box3().setFromObject(ground);
-  dbgEl.textContent = `t=${t.toFixed(2)} cam=${camera.position.x.toFixed(2)},${camera.position.y.toFixed(2)},${camera.position.z.toFixed(2)} rot=${(r.x * 57.3).toFixed(1)},${(r.y * 57.3).toFixed(1)},${(r.z * 57.3).toFixed(1)} fov=${camera.fov.toFixed(1)}\n` +
-    `fog=${scene.fog.near},${scene.fog.far} ground=${gb.min.x.toFixed(0)},${gb.min.z.toFixed(0)}..${gb.max.x.toFixed(0)},${gb.max.z.toFixed(0)}\n` +
-    dbgProj('house', -14, 1.6, -18) + '\n' +
-    dbgProj('fence', 0, 0.5, -5) + '\n' +
-    dbgProj('hero', hero.root.position.x, 1.0, hero.root.position.z) + ` vis=${hero.root.visible}\n` +
-    dbgProj('emu0', flock[0].root.position.x, 1.0, flock[0].root.position.z) + '\n' +
-    dbgProj('wheat0', wheatData[0].x, 0.4, wheatData[0].z);
-}
-
 function renderAt(t) {
-  let stage = 'camera';
-  try {
-    updateCamera(t);
-    stage = 'sky'; updateSky(t);
-    stage = 'flock'; updateFlock(t);
-    stage = 'hero'; updateHero(t);
-    stage = 'farmers'; updateFarmers(t);
-    stage = 'soldiers'; updateSoldiers(t);
-    stage = 'truck'; updateTruck(t);
-    stage = 'gun'; updateGun(t);
-    stage = 'wheat'; updateWheat(t);
-    stage = 'dust'; updateDust(t);
-    stage = 'clouds'; updateClouds(t);
-    stage = 'birds'; updateBirds(t);
-    windFan.rotation.z = t * 1.35;
-    stage = 'overlay'; updateOverlay(t);
-    stage = 'draw'; renderer.render(scene, camera);
-    stage = 'debug'; updateDbg(t);
-  } catch (e) {
-    __showErr('renderAt t=' + t + ' stage=' + stage + '\n' + (e && e.stack ? e.stack : e));
-    throw e;
-  }
+  updateCamera(t);
+  updateSky(t);
+  updateFlock(t);
+  updateHero(t);
+  updateFarmers(t);
+  updateSoldiers(t);
+  updateTruck(t);
+  updateGun(t);
+  updateWheat(t);
+  updateDust(t);
+  updateClouds(t);
+  updateBirds(t);
+  windFan.rotation.z = t * 1.35;
+  updateOverlay(t);
+  renderer.render(scene, camera);
 }
 window.addEventListener('hf-seek', (e) => renderAt(e.detail.time));
 renderAt(window.__hfThreeTime || 0);
