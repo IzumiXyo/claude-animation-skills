@@ -67,7 +67,7 @@ renderer.setPixelRatio(1); renderer.setSize(RW, RH, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x8fb7d6);
-scene.fog = new THREE.Fog(0xf0d8a8, 40, 125);
+scene.fog = new THREE.Fog(0xf0d8a8, 55, 170);
 const camera = new THREE.PerspectiveCamera(54, RW / RH, 0.08, 180);
 
 // ------------------------------------------------------------ PS1/N64 shader patch
@@ -112,7 +112,7 @@ T.ground = tex(32, 32, (g) => {
   for (let k = 0; k < 45; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0x9c7838), 1, 2);
   for (let y = 0; y < 32; y += 8) px(g, 0, y, col(0xb08a42, .9), 32, 1);
 });
-T.ground.repeat.set(30, 30);
+T.ground.repeat.set(42, 42);
 T.dirt = tex(32, 32, (g) => {
   noise(g, 0, 0, 32, 32, 0x8a6a48, .08);
   for (let k = 0; k < 50; k++) px(g, rnd() * 32 | 0, rnd() * 32 | 0, col(0x6b4f34, .9 + rnd() * .2), 1 + (rnd() * 3 | 0), 1);
@@ -237,20 +237,20 @@ function bake(root) {
 // ------------------------------------------------------------ sky, sun, hills, clouds
 const skyGeo = new THREE.PlaneGeometry(420, 230);
 const skyMats = [
-  new THREE.MeshBasicMaterial({ map: T.skyDay, transparent: true, depthWrite: false, depthTest: false, fog: false, side: THREE.DoubleSide }),
-  new THREE.MeshBasicMaterial({ map: T.skyGold, transparent: true, depthWrite: false, depthTest: false, fog: false, side: THREE.DoubleSide }),
-  new THREE.MeshBasicMaterial({ map: T.skyDusk, transparent: true, depthWrite: false, depthTest: false, fog: false, side: THREE.DoubleSide }),
-  new THREE.MeshBasicMaterial({ map: T.skySunset, transparent: true, depthWrite: false, depthTest: false, fog: false, side: THREE.DoubleSide }),
+  new THREE.MeshBasicMaterial({ map: T.skyDay, transparent: true, depthWrite: false, depthTest: true, fog: false, side: THREE.DoubleSide }),
+  new THREE.MeshBasicMaterial({ map: T.skyGold, transparent: true, depthWrite: false, depthTest: true, fog: false, side: THREE.DoubleSide }),
+  new THREE.MeshBasicMaterial({ map: T.skyDusk, transparent: true, depthWrite: false, depthTest: true, fog: false, side: THREE.DoubleSide }),
+  new THREE.MeshBasicMaterial({ map: T.skySunset, transparent: true, depthWrite: false, depthTest: true, fog: false, side: THREE.DoubleSide }),
 ];
 skyMats.forEach((m, i) => { const p = new THREE.Mesh(skyGeo, m); p.position.set(0, 45, -125); p.renderOrder = -40 + i; scene.add(p); });
 
-const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff0c0, fog: false, depthTest: false, depthWrite: false });
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff0c0, fog: false });
 const sun = new THREE.Mesh(new THREE.CircleGeometry(8.5, 12), sunMat);
 sun.position.set(-26, 24, -118); sun.renderOrder = -25; scene.add(sun);
 
 function hillLayer(z, color, pts) {
   const v = pts.map(([x, y]) => new THREE.Vector2(x, y));
-  const m = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(v)), new THREE.MeshBasicMaterial({ color, fog: false, depthWrite: false }));
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(v)), new THREE.MeshBasicMaterial({ color, fog: false }));
   m.position.set(0, 0, z); m.renderOrder = -20; scene.add(m); return m;
 }
 const hillA = hillLayer(-88, 0x6a7a5e, [[-170, -4], [-140, 8], [-110, 3], [-80, 11], [-50, 4], [-20, 8], [10, 3], [45, 10], [80, 4], [110, 7], [145, 2], [170, -4]]);
