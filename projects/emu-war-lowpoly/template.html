@@ -41,7 +41,7 @@ function __showErr(msg) {
   }
   d.textContent += msg + '\n';
 }
-window.addEventListener('error', (e) => __showErr('ERR: ' + (e.message || e.error) + '\n@ ' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || '')));
+window.addEventListener('error', (e) => __showErr('ERR: ' + (e.message || e.error) + '\n' + (e.error && e.error.stack ? e.error.stack : '') + '\n@ ' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || '')));
 window.addEventListener('unhandledrejection', (e) => __showErr('REJ: ' + (e.reason && (e.reason.stack || e.reason.message || e.reason))));
 </script>
 <div id="root" data-composition-id="main" data-start="0" data-duration="__DURATION__" data-fps="24" data-width="1080" data-height="1920">
@@ -1129,21 +1129,27 @@ function updateCamera(t) {
 }
 
 function renderAt(t) {
-  updateCamera(t);
-  updateSky(t);
-  updateFlock(t);
-  updateHero(t);
-  updateFarmers(t);
-  updateSoldiers(t);
-  updateTruck(t);
-  updateGun(t);
-  updateWheat(t);
-  updateDust(t);
-  updateClouds(t);
-  updateBirds(t);
-  windFan.rotation.z = t * 1.35;
-  updateOverlay(t);
-  renderer.render(scene, camera);
+  let stage = 'camera';
+  try {
+    updateCamera(t);
+    stage = 'sky'; updateSky(t);
+    stage = 'flock'; updateFlock(t);
+    stage = 'hero'; updateHero(t);
+    stage = 'farmers'; updateFarmers(t);
+    stage = 'soldiers'; updateSoldiers(t);
+    stage = 'truck'; updateTruck(t);
+    stage = 'gun'; updateGun(t);
+    stage = 'wheat'; updateWheat(t);
+    stage = 'dust'; updateDust(t);
+    stage = 'clouds'; updateClouds(t);
+    stage = 'birds'; updateBirds(t);
+    windFan.rotation.z = t * 1.35;
+    stage = 'overlay'; updateOverlay(t);
+    stage = 'draw'; renderer.render(scene, camera);
+  } catch (e) {
+    __showErr('renderAt t=' + t + ' stage=' + stage + '\n' + (e && e.stack ? e.stack : e));
+    throw e;
+  }
 }
 window.addEventListener('hf-seek', (e) => renderAt(e.detail.time));
 renderAt(window.__hfThreeTime || 0);
